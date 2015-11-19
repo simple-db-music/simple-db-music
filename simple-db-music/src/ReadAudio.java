@@ -18,18 +18,19 @@ public class ReadAudio {
 	
 	public static Complex[][] fft(File audioFile) throws IOException {
 		byte[] bytes = ReadAudio.toByteArray(audioFile);
+		System.out.println("Successfully read file");
 		int totalSize = bytes.length;
 		int numChunks = totalSize / CHUNK_SIZE;
 		Complex[][] results = new Complex[numChunks][];
-		
+		Complex[] complex = new Complex[CHUNK_SIZE];
 		for(int times = 0; times < numChunks; times++) {
-			Complex[] complex = new Complex[CHUNK_SIZE];
 			for(int i = 0; i < CHUNK_SIZE; i++) {
 				//Put the time domain data into a complex number with imaginary part as 0
 				complex[i] = new Complex(bytes[(times*CHUNK_SIZE)+i], 0);
 			}	
 			//Perform FFT analysis on the chunk:
 			results[times] = FFT.fft(complex);
+			System.out.println("FFT " + times);
 		}
 		
 		return results;
