@@ -2,6 +2,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
+
 public class ReadAudio {
 	
 	private static final int CHUNK_SIZE = 4096;
@@ -16,20 +18,26 @@ public class ReadAudio {
 		return bytes;
 	}
 	
-	public static Complex[][] fft(File audioFile) throws IOException {
+	public static double[][] fft(File audioFile) throws IOException {
 		byte[] bytes = ReadAudio.toByteArray(audioFile);
 		int totalSize = bytes.length;
 		int numChunks = totalSize / CHUNK_SIZE;
-		Complex[][] results = new Complex[numChunks][];
-		
+		double[][] results = new double[numChunks][];
+        double[] dub = new double[CHUNK_SIZE];
+        
+        DoubleFFT_1D fftDo = new DoubleFFT_1D(CHUNK_SIZE);
+
 		for(int times = 0; times < numChunks; times++) {
-			Complex[] complex = new Complex[CHUNK_SIZE];
 			for(int i = 0; i < CHUNK_SIZE; i++) {
 				//Put the time domain data into a complex number with imaginary part as 0
-				complex[i] = new Complex(bytes[(times*CHUNK_SIZE)+i], 0);
+			    
+				//complex[i] = new Complex(bytes[(times*CHUNK_SIZE)+i], 0);
+			    dub[i] = bytes[(times*CHUNK_SIZE)+i];
 			}	
 			//Perform FFT analysis on the chunk:
-			results[times] = FFT.fft(complex);
+			//results[times] = FFT.fft(complex);
+			fftDo.realForwardFull(dub);
+			results[times] = dub;
 		}
 		
 		return results;
