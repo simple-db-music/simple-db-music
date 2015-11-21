@@ -1,8 +1,11 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
+
+import visual.Spectrogram;
 
 public class Main {
 	
@@ -13,7 +16,14 @@ public class Main {
 		//ReadAudio.checkFFT();
 	    
 		try {
-			double[][] results = ReadAudio.fft(f);
+		    //ChunkProcessor c = new ChunkProcessor(f, 4096);
+		    //File createdFile = ReadAudio.fft(f);
+		    File createdFile = new File("00 Requiem for a dream Instrumental_mp3.fft");
+		    Spectrogram s = new Spectrogram(createdFile, 4096);
+		    s.show();
+		    
+			//double[][] results = ReadAudio.fft(f);
+		    /*
             double[][] magnitudes = new double[results.length][ReadAudio.CHUNK_SIZE];
 			
 			double real, complex;
@@ -50,13 +60,14 @@ public class Main {
 			System.out.println(magnitudes[0][372]);
 			
 	        System.out.println(magnitudes[1838][349]);
+	        */
 
 			/*
 			for (int i = 0; i < 10; i++) {
 			    System.out.println(Arrays.toString(magnitudes[i]));
 			}
 			*/			
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
