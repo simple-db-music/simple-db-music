@@ -1,6 +1,6 @@
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.File;
+import java.io.*;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class ReadAudio {
 //		return bytes;
 //	}
 	
-	
+
 	public static File fft(File audioFile) throws IOException, UnsupportedAudioFileException {
 //		byte[] bytes = ReadAudio.toByteArray(audioFile);
 //		System.out.println("Successfully read file");;
@@ -138,6 +138,37 @@ public class ReadAudio {
 	    //outputStream.flush();
 	}
 	
+	/*
+	public static void fft2(File audioFile) throws IOException, UnsupportedAudioFileException {
+		byte[] bytes = ReadAudio.toByteArray(audioFile);
+		System.out.println("Successfully read file");
+		int totalSize = bytes.length;
+		int numChunks = totalSize / CHUNK_SIZE;
+		double[][] audioRe = new double[numChunks][];
+		double[][] audioIm = new double[numChunks][];
+		double[][] audioMag = new double[numChunks][];
+		FFT2 fft = new FFT2(CHUNK_SIZE);
+		double[] real = new double[CHUNK_SIZE];
+		double[] imaginary =  new double[CHUNK_SIZE];
+		for(int times = 0; times < numChunks; times++) {
+			for(int i = 0; i < CHUNK_SIZE; i++) {
+				//Put the time domain data into a complex number with imaginary part as 0
+				real[i] = bytes[(times*CHUNK_SIZE)+i];
+				imaginary[i] = 0;
+			}
+			fft.fft(real, imaginary);
+			audioRe[times] =  real;
+			audioIm[times] = imaginary;
+			double[] magnitudes = new double[CHUNK_SIZE];
+			for (int i = 0; i < CHUNK_SIZE; i++) {
+				magnitudes[i] = Math.sqrt(real[i] * real[i] + imaginary[i] * imaginary[i]);
+			}
+			audioMag[times] = magnitudes;
+		}
+		System.out.println("Finished FFT");
+	}
+	*/
+
 	public static void checkFFT() {
 	    double[] input = {0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0};
         DoubleFFT_1D fftDo = new DoubleFFT_1D(8);

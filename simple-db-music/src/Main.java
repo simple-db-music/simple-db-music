@@ -1,7 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -10,10 +9,11 @@ import visual.Spectrogram;
 public class Main {
 	
 	public static void main(String[] args) throws UnsupportedAudioFileException {
-		//File f = new File("sample_music/06 Melt My Heart To Stone.mp3");
-	    //File f = new File("sample_music/00 clique_mp3.mp3");
-	    File f = new File("sample_music/00 Requiem for a dream Instrumental_mp3.mp3");
-		//ReadAudio.checkFFT();
+		// File f = new File("sample_music/06 Melt My Heart To Stone.mp3");
+	    // File f = new File("sample_music/00 clique_mp3.mp3");
+		// File f = new File("sample_music/Drake_-_Hotline_Bling.mp3");
+	    // File f = new File("sample_music/00 Requiem for a dream Instrumental_mp3.mp3");
+		// ReadAudio.checkFFT();
 	    
 		try {
 		    //ChunkProcessor c = new ChunkProcessor(f, 4096);
