@@ -8,7 +8,7 @@ public class ReadAudio {
 	private static final int SAMPLE_RATE = 44100;
 	
 	public static double[][] extractSpectogram(Wave wave, String waveName, boolean renderSpectrogram) {
-	    System.out.println("length in s: "+wave.length());
+	    System.out.println("orig length in s: "+wave.length());
 	    Resampler resampler = new Resampler();
 	    int sourceRate = wave.getWaveHeader().getSampleRate();
 	    byte[] resampledBytes = resampler.reSample(wave.getBytes(), wave.getWaveHeader().getBitsPerSample(), 
@@ -18,6 +18,8 @@ public class ReadAudio {
 	    resampledHeader.setSampleRate(SAMPLE_RATE);
 	    Wave resampledWave = new Wave(resampledHeader, resampledBytes);
 	    Spectrogram spectrogram = resampledWave.getSpectrogram();
+	    System.out.println("resampled length in s: "+resampledWave.length());
+	    
 	    
 	    if (renderSpectrogram) {
 	        GraphicRender render = new GraphicRender();
