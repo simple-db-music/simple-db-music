@@ -7,9 +7,8 @@ import com.musicg.wave.extension.Spectrogram;
 public class ReadAudio {
 	private static final int SAMPLE_RATE = 44100;
 	
-	public static double[][] extractSpectogram(String filename, boolean renderSpectrogram) {
-	    Wave wave = new Wave(filename);
-	    
+	public static double[][] extractSpectogram(Wave wave, String waveName, boolean renderSpectrogram) {
+	    System.out.println("length in s: "+wave.length());
 	    Resampler resampler = new Resampler();
 	    int sourceRate = wave.getWaveHeader().getSampleRate();
 	    byte[] resampledBytes = resampler.reSample(wave.getBytes(), wave.getWaveHeader().getBitsPerSample(), 
@@ -22,8 +21,7 @@ public class ReadAudio {
 	    
 	    if (renderSpectrogram) {
 	        GraphicRender render = new GraphicRender();
-	        filename = filename.substring(filename.indexOf('/')+1);
-	        render.renderSpectrogramData(spectrogram.getNormalizedSpectrogramData(), "out/"+filename+"_norm.jpg");
+	        render.renderSpectrogramData(spectrogram.getNormalizedSpectrogramData(), "out/"+waveName+"_norm.jpg");
 	    }
 	    	    
 	    return spectrogram.getAbsoluteSpectrogramData();
