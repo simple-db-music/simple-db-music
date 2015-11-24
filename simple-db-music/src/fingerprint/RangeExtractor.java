@@ -6,9 +6,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
-public class RangeExtractor implements Extractor {
+import simpledb.BTreeFile;
+import simpledb.DbException;
+import simpledb.TransactionAbortedException;
+import simpledb.TransactionId;
+
+public class RangeExtractor extends Extractor {
     
     private static final int[] FREQ_RANGES = new int[] {12, 24, 36, 48, 60, 72, 100};
 
@@ -31,14 +37,14 @@ public class RangeExtractor implements Extractor {
 
     @Override
     public Map<Integer, Double> matchPoints(Set<DataPoint> samplePoints,
-            Map<Integer, Set<DataPoint>> knownPoints) {
+            BTreeFile btree, TransactionId tid) throws NoSuchElementException, DbException, TransactionAbortedException {
         HashMap<Integer, List<Integer>> matches = new HashMap<Integer, List<Integer>>();
         HashMap<Integer, List<Integer>> times = new HashMap<Integer, List<Integer>>();
         
         Set<DataPoint> knownMatches = new HashSet<DataPoint>();
         for (DataPoint samplePoint: samplePoints) {
-            knownMatches =  knownPoints.get(samplePoint.getHash());
-            if (knownMatches == null) {
+            knownMatches =  getPointsMatchingHash(samplePoint.getHash(), btree, tid);
+            if (knownMatches.size() == 0) {
                 continue;
             }
             // choose random data point from the set

@@ -4,9 +4,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
-public class AnchorExtractor implements Extractor {
+import simpledb.BTreeFile;
+import simpledb.DbException;
+import simpledb.TransactionAbortedException;
+import simpledb.TransactionId;
+
+public class AnchorExtractor extends Extractor {
 
     private static final int TARGET_ZONE_SIZE = 5;
     private static final int TARGET_ZONE_MIN_LOOKAHEAD = 5;
@@ -15,36 +21,36 @@ public class AnchorExtractor implements Extractor {
     
     @Override
     public Map<Integer, Double> matchPoints(Set<DataPoint> samplePoints,
-            Map<Integer, Set<DataPoint>> knownPoints) {        
+           BTreeFile btree, TransactionId tid) throws NoSuchElementException, DbException, TransactionAbortedException {        
         int curHash;
-        Map<Integer, Map<Integer, Integer>> songToOffsetVotes = new HashMap<>();        
+        Map<Integer, Map<Integer, Integer>> songToOffsetVotes = new HashMap<Integer, Map<Integer, Integer>>();        
         Integer curDiff;
         Integer curVotes;
         int count = 0;
+        Set<DataPoint> knownPoints = new HashSet<DataPoint>();
         for (DataPoint dp : samplePoints) {
             curHash = dp.getHash();
             if (++count % 500 == 0) {
                 System.out.println("Cur sample dp: "+count);
             }
-            if (knownPoints.containsKey(curHash)) {
-                for (DataPoint knownPoint : knownPoints.get(curHash)) {
-                    Map<Integer, Integer> songVotes = songToOffsetVotes.get(knownPoint.getTrackId());
-                    if (songVotes == null) {
-                        songVotes = new HashMap<Integer, Integer>();
-                        songToOffsetVotes.put(knownPoint.getTrackId(), songVotes);
-                    }
-                    curDiff = knownPoint.getTimeOffset() - dp.getTimeOffset();
-                    curVotes = songVotes.get(curDiff);
-                    if (curVotes == null) {
-                        curVotes = 0;
-                    }
-                    curVotes += 1;
-                    songVotes.put(curDiff, curVotes);
+            knownPoints =  getPointsMatchingHash(curHash, btree, tid);
+            for (DataPoint knownPoint : knownPoints) {
+                Map<Integer, Integer> songVotes = songToOffsetVotes.get(knownPoint.getTrackId());
+                if (songVotes == null) {
+                    songVotes = new HashMap<Integer, Integer>();
+                    songToOffsetVotes.put(knownPoint.getTrackId(), songVotes);
                 }
+                curDiff = knownPoint.getTimeOffset() - dp.getTimeOffset();
+                curVotes = songVotes.get(curDiff);
+                if (curVotes == null) {
+                    curVotes = 0;
+                }
+                curVotes += 1;
+                songVotes.put(curDiff, curVotes);
             }
         }
 
-        Map<Integer, Double> songToScore = new HashMap<>();
+        Map<Integer, Double> songToScore = new HashMap<Integer, Double>();
         for (Integer songId : songToOffsetVotes.keySet()) {
             Map<Integer, Integer> votes = songToOffsetVotes.get(songId);
             int max = -1;
