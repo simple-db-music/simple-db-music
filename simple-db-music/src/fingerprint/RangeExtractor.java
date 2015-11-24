@@ -35,7 +35,6 @@ public class RangeExtractor implements Extractor {
         HashMap<Integer, List<Integer>> matches = new HashMap<Integer, List<Integer>>();
         HashMap<Integer, List<Integer>> times = new HashMap<Integer, List<Integer>>();
         
-        //int m =0;
         Set<DataPoint> knownMatches = new HashSet<DataPoint>();
         for (DataPoint samplePoint: samplePoints) {
             knownMatches =  knownPoints.get(samplePoint.getHash());
