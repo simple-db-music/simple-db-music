@@ -28,6 +28,7 @@ public class AnchorExtractor extends Extractor {
         Integer curVotes;
         int count = 0;
         Set<DataPoint> knownPoints = new HashSet<DataPoint>();
+        int knownCount = 0;
         for (DataPoint dp : samplePoints) {
             curHash = dp.getHash();
             if (++count % 500 == 0) {
@@ -35,6 +36,7 @@ public class AnchorExtractor extends Extractor {
             }
             knownPoints =  getPointsMatchingHash(curHash, btree, tid);
             for (DataPoint knownPoint : knownPoints) {
+                knownCount++;
                 Map<Integer, Integer> songVotes = songToOffsetVotes.get(knownPoint.getTrackId());
                 if (songVotes == null) {
                     songVotes = new HashMap<Integer, Integer>();
@@ -51,6 +53,8 @@ public class AnchorExtractor extends Extractor {
         }
 
         Map<Integer, Double> songToScore = new HashMap<Integer, Double>();
+        System.out.println("song to offset: "+songToOffsetVotes.keySet());
+        System.out.println("total known points found: "+knownCount);
         for (Integer songId : songToOffsetVotes.keySet()) {
             Map<Integer, Integer> votes = songToOffsetVotes.get(songId);
             int max = -1;
@@ -64,6 +68,8 @@ public class AnchorExtractor extends Extractor {
             //System.out.println("max diff for "+song+": "+maxDiff);
             songToScore.put(songId, (double) max);
         }
+        
+        System.out.println("first scores: "+songToScore);
 
         return songToScore;
     }

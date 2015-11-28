@@ -425,7 +425,7 @@ public class BTreeUtility {
 		// create the BTreeFile and add it to the catalog
 		TupleDesc td = Utility.getTupleDesc(cols);
 		BTreeFile bf = new BTreeFile(f, keyField, td);
-		Database.getCatalog().addTable(bf, UUID.randomUUID().toString());
+		//Database.getCatalog().addTable(bf, UUID.randomUUID().toString());
 		return bf;
 	}
 
