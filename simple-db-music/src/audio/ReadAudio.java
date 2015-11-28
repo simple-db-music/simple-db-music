@@ -20,8 +20,7 @@ public class ReadAudio {
 	    WaveHeader resampledHeader = wave.getWaveHeader();
 	    resampledHeader.setSampleRate(SAMPLE_RATE);
 	    Wave resampledWave = new Wave(resampledHeader, resampledBytes);
-	    Spectrogram spectrogram = resampledWave.getSpectrogram();//resampledWave.getSpectrogram();
-	    //System.out.println("SPEC FREQ UNIT: "+spectrogram.getNumFrequencyUnit());
+	    Spectrogram spectrogram = resampledWave.getSpectrogram();
 	    //System.out.println("num channels: "+resampledWave.getWaveHeader().getChannels());
 	    //System.out.println("resampled length in s: "+resampledWave.length());
 	    if (renderSpectrogram) {

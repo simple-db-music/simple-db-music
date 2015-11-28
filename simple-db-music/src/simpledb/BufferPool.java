@@ -223,9 +223,9 @@ public class BufferPool {
         synchronized (cache) {
             for (PageId pageid : cache.keySet()) {
                 Page page = cache.get(pageid);
-                if (page.isPageDirty() != null) {
+                //if (page.isPageDirty() != null) {
                     flushPage(pageid);
-                }
+                //}
             }
         }
     }

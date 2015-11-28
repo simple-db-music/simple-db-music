@@ -100,7 +100,7 @@ public class Utility {
      * will be overwritten. The new table will be added to the Catalog with
      * the specified number of columns as IntFields.
      */
-    public static HeapFile createEmptyHeapFile(String path, int cols)
+    public static HeapFile createEmptyHeapFile(String path, int cols, TupleDesc td)
         throws IOException {
         File f = new File(path);
         // touch the file
@@ -108,7 +108,7 @@ public class Utility {
         fos.write(new byte[0]);
         fos.close();
 
-        HeapFile hf = openHeapFile(cols, f);
+        HeapFile hf = openHeapFile(cols, f, td);
         HeapPageId pid = new HeapPageId(hf.getId(), 0);
 
         HeapPage page = null;
@@ -134,6 +134,15 @@ public class Utility {
     	TupleDesc td = getTupleDesc(cols);
         HeapFile hf = new HeapFile(f, td);
         Database.getCatalog().addTable(hf, UUID.randomUUID().toString());
+        return hf;
+    }
+    
+    public static HeapFile openHeapFile(int cols, File f, TupleDesc td) {
+        // create the HeapFile and add it to the catalog
+        //TupleDesc td = getTupleDesc(cols);
+        HeapFile hf = new HeapFile(f, td);
+        Database.getCatalog().addTable(hf);
+        //Database.getCatalog().addTable(hf, UUID.randomUUID().toString());
         return hf;
     }
     
