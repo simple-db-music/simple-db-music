@@ -1,66 +1,31 @@
-import java.io.File;
-import java.io.IOException;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
+import songs.SongLibrary;
 
 public class Main {
-	
-	public static void main(String[] args) throws UnsupportedAudioFileException {
-		// File f = new File("sample_music/06 Melt My Heart To Stone.mp3");
-	    // File f = new File("sample_music/00 clique_mp3.mp3");
-		// File f = new File("sample_music/Drake_-_Hotline_Bling.mp3");
-	    // File f = new File("sample_music/00 Requiem for a dream Instrumental_mp3.mp3");
-		// ReadAudio.checkFFT();
-	    
-		try {
-			double[][] results = ReadAudio.fft(f);
-            double[][] magnitudes = new double[results.length][ReadAudio.CHUNK_SIZE];
-			
-			double real, complex;
-			for (int i = 0; i < results.length; i++) {
-			    for (int j = 0; j < ReadAudio.CHUNK_SIZE; j++) {
-			        real = results[i][2*j];
-			        complex = results[i][2*j+1];
-			        magnitudes[i][j] = Math.sqrt(real*real+complex*complex);
-			    }
-			}
-			
-			System.out.println("detecting duplicates...");
-			boolean same;
-			boolean everSame = false;
-			for (int i = 0; i < magnitudes.length; i++) {
-			    for (int j = i+1; j < magnitudes.length; j++) {
-			        same = true;
-			        for (int k = 0; k < magnitudes[i].length; k++) {
-			            if (magnitudes[i][k] != magnitudes[j][k]) {
-			                same = false;
-			                break;
-			            }
-			        }
-			        if (same) {
-			            everSame = true;
-			            System.out.println(i+" and "+j+" are duplicates!!");
-			        }
-			    }
-			}
-			
-			System.out.println("everSame? "+everSame);
-			
-			
-			System.out.println(magnitudes[0][372]);
-			
-	        System.out.println(magnitudes[1838][349]);
+    /*
+    private static final String[] KNOWN_SONGS = {"1-07 Can't Feel My Face.wav",
+            "Drake - Hotline Bling.wav", "hi_bryan.wav", "09 Jumpman.wav", "Come Over Full.wav",
+            "canon_d_major.wav", "fing_fing_ha.wav", "forrest_gump_theme.wav", 
+            "imagine.wav", "top_of_the_world.wav"
+    };
+    */
+    private static final String[] KNOWN_SONGS = {
+            "canon_d_major.wav", "fing_fing_ha.wav", "forrest_gump_theme.wav", 
+            "imagine.wav", "top_of_the_world.wav", "Come Over Full.wav"
+    };
+    /*
+    private static final String[] KNOWN_SONGS = {"Come Over Full.wav",
+             "09 Jumpman.wav", "Drake - Hotline Bling.wav", "1-07 Can't Feel My Face.wav"
+    };
+    */
+    private static final String SAMPLE_SONG = "hotline bling sample.wav";
+    //private static final String SAMPLE_SONG = "Come Over Clip 0.wav";
+    //private static final String SAMPLE_SONG = "can't feel my face sample.wav";
+    
+    private static final boolean USE_RANGE_EXTRACTION = true;
 
-			/*
-			for (int i = 0; i < 10; i++) {
-			    System.out.println(Arrays.toString(magnitudes[i]));
-			}
-			*/			
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (UnsupportedAudioFileException e) {
-			e.printStackTrace();
-		}
-	}
-
+    public static void main(String[] args) throws Exception {//IOException, NoSuchElementException, DbException, TransactionAbortedException {
+        SongLibrary songLibrary = new SongLibrary(KNOWN_SONGS, USE_RANGE_EXTRACTION);
+        long duration = songLibrary.matchSong(SAMPLE_SONG);
+        System.out.println("Matching took "+ duration + " ms");
+    }
 }
