@@ -1,2 +1,5 @@
-.DS_Store
 bin/
+.classpath
+**/.DS_Store
+sample_music/
+.DS_Store

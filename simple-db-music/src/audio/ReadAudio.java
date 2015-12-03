@@ -6,7 +6,7 @@ import com.musicg.wave.WaveHeader;
 import com.musicg.wave.extension.Spectrogram;
 
 public class ReadAudio {
-	private static final int SAMPLE_RATE = 44100;
+	public static final int SAMPLE_RATE = 44100;
 	
     private static final int[] FREQ_RANGES = new int[] {12, 24, 36, 48, 60, 72, 100};
 	
