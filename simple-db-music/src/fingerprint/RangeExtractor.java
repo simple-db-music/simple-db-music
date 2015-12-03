@@ -75,6 +75,7 @@ public class RangeExtractor extends Extractor {
     
     private double checkTimes(List<Integer> real, List<Integer> recorded) {
         double total = real.size() - 1.0;
+        if (total == 0) return 0;
         int correct = 0;
         
         for (int i = 1; i < real.size(); i++) {

@@ -11,24 +11,30 @@ public class ReadAudio {
     private static final int[] FREQ_RANGES = new int[] {12, 24, 36, 48, 60, 72, 100};
 	
 	public static double[][] extractSpectogram(Wave wave, String waveName, boolean renderSpectrogram) {
-	    System.out.println("reading in song "+waveName);
-	    //System.out.println("orig length in s: "+wave.length());
-	    Resampler resampler = new Resampler();
-	    int sourceRate = wave.getWaveHeader().getSampleRate();
-	    byte[] resampledBytes = resampler.reSample(wave.getBytes(), wave.getWaveHeader().getBitsPerSample(), 
-	            sourceRate, SAMPLE_RATE);
-	    WaveHeader resampledHeader = wave.getWaveHeader();
-	    resampledHeader.setSampleRate(SAMPLE_RATE);
-	    Wave resampledWave = new Wave(resampledHeader, resampledBytes);
-	    Spectrogram spectrogram = resampledWave.getSpectrogram();
-	    //System.out.println("num channels: "+resampledWave.getWaveHeader().getChannels());
-	    //System.out.println("resampled length in s: "+resampledWave.length());
-	    if (renderSpectrogram) {
-	        GraphicRender render = new GraphicRender();
-	        render.renderSpectrogramData(spectrogram.getNormalizedSpectrogramData(), "out/"+waveName+"_norm.jpg");
+	    try {
+	        System.out.println("reading in song "+waveName);
+	        //System.out.println("orig length in s: "+wave.length());
+	        Resampler resampler = new Resampler();
+	        int sourceRate = wave.getWaveHeader().getSampleRate();
+	        byte[] resampledBytes = resampler.reSample(wave.getBytes(), wave.getWaveHeader().getBitsPerSample(), 
+	                sourceRate, SAMPLE_RATE);
+	        WaveHeader resampledHeader = wave.getWaveHeader();
+	        resampledHeader.setSampleRate(SAMPLE_RATE);
+	        Wave resampledWave = new Wave(resampledHeader, resampledBytes);
+	        Spectrogram spectrogram = resampledWave.getSpectrogram();
+	        //System.out.println("num channels: "+resampledWave.getWaveHeader().getChannels());
+	        //System.out.println("resampled length in s: "+resampledWave.length());
+	        if (renderSpectrogram) {
+	            GraphicRender render = new GraphicRender();
+	            render.renderSpectrogramData(spectrogram.getNormalizedSpectrogramData(), "out/"+waveName+"_norm.jpg");
+	        }
+	                
+	        return spectrogram.getAbsoluteSpectrogramData();
+	    } catch (ArrayIndexOutOfBoundsException e) {
+	        // error reading in song
+	        System.out.println("Error processing "+waveName+". skipping");
+	        return null;
 	    }
-	    	    
-	    return spectrogram.getAbsoluteSpectrogramData();
 	}
 	
 	  public static int[][] extractKeyPoints(double[][] spectrogram) {

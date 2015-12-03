@@ -1,31 +1,35 @@
+import java.io.File;
+
 import songs.SongLibrary;
 
 public class Main {
-    /*
-    private static final String[] KNOWN_SONGS = {"1-07 Can't Feel My Face.wav",
-            "Drake - Hotline Bling.wav", "hi_bryan.wav", "09 Jumpman.wav", "Come Over Full.wav",
-            "canon_d_major.wav", "fing_fing_ha.wav", "forrest_gump_theme.wav", 
-            "imagine.wav", "top_of_the_world.wav"
-    };
-    */
-    private static final String[] KNOWN_SONGS = {
-            "canon_d_major.wav", "fing_fing_ha.wav", "forrest_gump_theme.wav", 
-            "imagine.wav", "top_of_the_world.wav", "Come Over Full.wav"
-    };
-    /*
-    private static final String[] KNOWN_SONGS = {"Come Over Full.wav",
-             "09 Jumpman.wav", "Drake - Hotline Bling.wav", "1-07 Can't Feel My Face.wav"
-    };
-    */
-    private static final String SAMPLE_SONG = "hotline bling sample.wav";
-    //private static final String SAMPLE_SONG = "Come Over Clip 0.wav";
-    //private static final String SAMPLE_SONG = "can't feel my face sample.wav";
+    private static final File KNOWN_SONG_FOLDER = new File("known_songs");
+    private static final File SAMPLE_SONG_FOLDER = new File("sample_songs");
+    
     
     private static final boolean USE_RANGE_EXTRACTION = true;
+    private static final boolean USE_CLUSTERED_DB = false;
 
     public static void main(String[] args) throws Exception {//IOException, NoSuchElementException, DbException, TransactionAbortedException {
-        SongLibrary songLibrary = new SongLibrary(KNOWN_SONGS, USE_RANGE_EXTRACTION);
-        long duration = songLibrary.matchSong(SAMPLE_SONG);
-        System.out.println("Matching took "+ duration + " ms");
+        SongLibrary songLibrary = new SongLibrary(KNOWN_SONG_FOLDER, USE_RANGE_EXTRACTION, USE_CLUSTERED_DB);
+        long totalDuration = 0;
+        int count = 0;
+        for (File sampleSong : SAMPLE_SONG_FOLDER.listFiles()) {
+            // Filter out .DS_STORE
+            if (sampleSong.getName().startsWith(".")) {
+                continue;
+            }
+            System.out.println("Matching "+sampleSong+"...");
+            long duration = songLibrary.matchSong(sampleSong);
+            // error reading in sample
+            if (duration == -1) {
+                continue;
+            }
+            totalDuration += duration;
+            count++;
+            System.out.println("Matching took "+ duration + " ms");
+        }
+        
+        System.out.println("\n\nOverall avg matching duration: "+1.0*totalDuration/count+" ms");
     }
 }

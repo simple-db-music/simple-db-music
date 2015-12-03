@@ -17,6 +17,7 @@ import simpledb.BTreeFile;
 import simpledb.BTreeUtility;
 import simpledb.Database;
 import simpledb.DbException;
+import simpledb.DbFileIterator;
 import simpledb.HeapFile;
 import simpledb.IntField;
 import simpledb.SeqScan;
@@ -30,7 +31,7 @@ import simpledb.Utility;
 
 
 public class SongLibrary {
-    private final File dbFile = new File("song_db");
+    private final File dbFile;
     private final File songNameFile = new File("songs");
 
     private final Extractor extractor;
@@ -40,12 +41,18 @@ public class SongLibrary {
     private final TupleDesc songNameTableTd;
     private final TransactionId tid;
 
-    public SongLibrary(String[] songNames, boolean useRangeExtraction) throws IOException {
+    public SongLibrary(File songFolder, boolean useRangeExtraction, boolean useClustered) throws IOException {
         if (useRangeExtraction) {
             extractor = new RangeExtractor();
         } else {
             extractor = new AnchorExtractor();
         }
+        if (useClustered) {
+            dbFile = new File("clustered_song_db");
+        } else {
+            dbFile = new File("song_db");
+        }
+        
         btreeTd = new TupleDesc(new Type[] {Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE},
                 new String[] {"Hash", "Time Offset", "Track ID"});
         songNameTableTd = new TupleDesc(new Type[]{Type.STRING_TYPE, Type.INT_TYPE},
@@ -57,7 +64,7 @@ public class SongLibrary {
             songNameTable = Utility.createEmptyHeapFile("songs", 2, songNameTableTd);
             Database.getCatalog().addTable(btree);
             Database.getCatalog().addTable(songNameTable);
-            createDatabase(songNames);
+            createDatabase(songFolder);
         } else {
             btree = BTreeUtility.openBTreeFile(3, dbFile, 0);
             Database.getCatalog().addTable(btree);
@@ -66,13 +73,24 @@ public class SongLibrary {
         }
     }
 
-    private void createDatabase(String[] songNames) {
+    private void createDatabase(File songFolder) {
         System.out.println("creating db...");
-        for (int i = 0; i < songNames.length; i++) {
-            String name = songNames[i];
-            Wave wave = new Wave("sample_music/"+name);
-            double[][] spectrogram = ReadAudio.extractSpectogram(wave, name, false);	    
-            Set<DataPoint> dataPoints = extractor.extractDataPoints(spectrogram, i);
+        int songNum = 0;
+        int tupCount = 0;
+        for (File song : songFolder.listFiles()) {
+            String name = song.getName();
+            // filter out .DS_STORE
+            if (name.startsWith(".")) {
+                continue;
+            }
+            System.out.println("on song "+songNum);
+            Wave wave = new Wave(song.getAbsolutePath());
+            double[][] spectrogram = ReadAudio.extractSpectogram(wave, name, false);
+            // error reading in song
+            if (spectrogram == null) {
+                continue;
+            }
+            Set<DataPoint> dataPoints = extractor.extractDataPoints(spectrogram, songNum);
             for (DataPoint p  : dataPoints) {
                 Tuple tupleDataPoint = new Tuple(btreeTd);
                 tupleDataPoint.setField(0, new IntField(p.getHash()));
@@ -80,28 +98,75 @@ public class SongLibrary {
                 tupleDataPoint.setField(2, new IntField(p.getTrackId()));
                 try {
                     Database.getBufferPool().insertTuple(tid, btree.getId(), tupleDataPoint);
+                    tupCount++;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
             Tuple songTuple = new Tuple(songNameTableTd);
             songTuple.setField(0, new StringField(name, Type.STRING_LEN));
-            songTuple.setField(1, new IntField(i));
+            songTuple.setField(1, new IntField(songNum));
             try {
                 Database.getBufferPool().insertTuple(tid, songNameTable.getId(), songTuple);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             System.out.println("done!");
+            songNum++;
+        }
+        try {
+            System.out.println("done creating db! "+tupCount+" tuples inserted");
+            System.out.println("Flushing pages...");
+            Database.getBufferPool().flushAllPages();
+            System.out.println("done!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            DbFileIterator it = btree.iterator(tid);
+            it.open();
+            int readCount = 0;
+            while (it.hasNext()) {
+                readCount++;
+                it.next();
+            }
+            System.out.println("Read "+readCount+"while scanning over db");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // Uncomment this to create a clustered version of the database in a separate file
+        //clusterDb();
+    }
+    
+    private void clusterDb() {
+        try {
+            System.out.println("clustering db...");
+            BTreeFile clusteredDb = BTreeUtility.createEmptyBTreeFile("clustered_song_db", 3, 0);
+            Database.getCatalog().addTable(clusteredDb);
+            DbFileIterator it = btree.iterator(tid);
+            it.open();
+            int count = 0;
+            while (it.hasNext()) {
+                count++;
+                Database.getBufferPool().insertTuple(tid, clusteredDb.getId(), it.next());
+            }
+            it.close();
+            System.out.println("Succesfully clustered db! "+count+" tuples inserted");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    public long matchSong(String file) throws NoSuchElementException, DbException, TransactionAbortedException, IOException {
-        Wave wave = new Wave("sample_music/"+file);
-        double[][] spectrogram = ReadAudio.extractSpectogram(wave, file, false);
+    public long matchSong(File file) throws NoSuchElementException, DbException, TransactionAbortedException, IOException {
+        long time = System.currentTimeMillis();
+        Wave wave = new Wave(file.getAbsolutePath());
+        double[][] spectrogram = ReadAudio.extractSpectogram(wave, file.getName(), false);
+        if (spectrogram == null) {
+            // error reading in sample
+            return -1;
+        }
         // assigning a unique song id
         Set<DataPoint> samplePoints = extractor.extractDataPoints(spectrogram, -1);
-        long time = System.currentTimeMillis();
         Map<Integer, Double> songIdToScore = extractor.matchPoints(samplePoints, btree, tid);
         long duration = System.currentTimeMillis() - time;
         System.out.println("Scores: "+convertToSongNames(songIdToScore).toString());
