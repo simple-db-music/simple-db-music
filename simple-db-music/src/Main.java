@@ -17,9 +17,10 @@ public class Main {
              "09 Jumpman.wav", "Drake - Hotline Bling.wav", "1-07 Can't Feel My Face.wav"
     };
     */
-    private static final String SAMPLE_SONG = "hotline bling sample.wav";
-    //private static final String SAMPLE_SONG = "Come Over Clip 0.wav";
+    //private static final String SAMPLE_SONG = "hotline bling sample.wav";
+    //private static final String SAMPLE_SONG = "sample_music/Come Over Clip 4.wav";
     //private static final String SAMPLE_SONG = "can't feel my face sample.wav";
+    private static final String SAMPLE_SONG = "recorded_music/RecordAudio.wav";
     
     private static final boolean USE_RANGE_EXTRACTION = true;
 

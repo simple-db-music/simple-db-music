@@ -97,7 +97,7 @@ public class SongLibrary {
     }
 
     public long matchSong(String file) throws NoSuchElementException, DbException, TransactionAbortedException, IOException {
-        Wave wave = new Wave("sample_music/"+file);
+        Wave wave = new Wave(file);
         double[][] spectrogram = ReadAudio.extractSpectogram(wave, file, false);
         // assigning a unique song id
         Set<DataPoint> samplePoints = extractor.extractDataPoints(spectrogram, -1);
