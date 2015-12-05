@@ -35,9 +35,9 @@ public class JavaSoundRecorder {
     private AudioFormat getAudioFormat() {
         float sampleRate = ReadAudio.SAMPLE_RATE;
         int sampleSizeInBits = 16;
-        int channels = 2;
+        int channels = 1;
         boolean signed = true;
-        boolean bigEndian = false;
+        boolean bigEndian = true;
         
         AudioFormat format = new AudioFormat(sampleRate, sampleSizeInBits,
                                              channels, signed, bigEndian);
