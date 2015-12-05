@@ -1,7 +1,10 @@
 package fingerprint;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -27,14 +30,26 @@ public class AnchorExtractor extends Extractor {
         Integer curDiff;
         Integer curVotes;
         int count = 0;
+        /*
+        List<DataPoint> sortedSamplePoints = new ArrayList<DataPoint>(samplePoints);
+        Collections.sort(sortedSamplePoints, (p1, p2) -> p1.getHash() - p2.getHash());;
+        */
         Set<DataPoint> knownPoints = new HashSet<DataPoint>();
         for (DataPoint dp : samplePoints) {
+        //for (DataPoint dp : sortedSamplePoints) {
             curHash = dp.getHash();
             if (++count % 500 == 0) {
                 System.out.println("Cur sample dp: "+count);
             }
             knownPoints =  getPointsMatchingHash(curHash, btree, tid);
+            //System.out.println("num points matched to: "+knownPoints.size());
             for (DataPoint knownPoint : knownPoints) {
+                /*
+                int trackId = knownPoint.getTrackId();
+                if (trackId < 16) {
+                    System.out.println("matched to song with track id "+trackId);
+                }
+                */
                 Map<Integer, Integer> songVotes = songToOffsetVotes.get(knownPoint.getTrackId());
                 if (songVotes == null) {
                     songVotes = new HashMap<Integer, Integer>();

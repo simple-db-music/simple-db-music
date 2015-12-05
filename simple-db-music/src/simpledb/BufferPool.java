@@ -86,9 +86,11 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
 
+        /*
         // keep trying to acquire lock, only advance once succeed
         while (!lockManager.acquireLock(tid, pid, perm)) {
         }
+        */
         
         // must synchronize on cache because eviction is possible between
         // these two lines (can evict clean pages, so even if 
@@ -157,12 +159,14 @@ public class BufferPool {
             cache.remove(pid);
         }
 
+        /*
         // release all acquired locks
         for (PageId pid : lockManager.getLockedPages()) {
             if (lockManager.holdsLock(tid, pid)) {
                 releasePage(tid, pid);
             }
-        }        
+        }
+        */        
     }
 
     /**
@@ -281,6 +285,7 @@ public class BufferPool {
             }
             
             Iterator<PageId> iterator = cache.keySet().iterator();
+            boolean shouldRemove;
             do {
                 if (!iterator.hasNext()) {
                     //throw new DbException("Error - need to evict page but all pages in buffer pool are dirty");
@@ -288,7 +293,9 @@ public class BufferPool {
                     break;
                 }
                 pageIdToRemove = iterator.next();
-            } while (cache.get(pageIdToRemove).isPageDirty() != null);
+                shouldRemove = (cache.get(pageIdToRemove) instanceof BTreeLeafPage);
+            //} while (cache.get(pageIdToRemove).isPageDirty() != null);
+            } while (!shouldRemove);
             
             try {
                 flushPage(pageIdToRemove);

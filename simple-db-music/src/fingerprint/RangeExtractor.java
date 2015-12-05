@@ -47,6 +47,9 @@ public class RangeExtractor extends Extractor {
             if (knownMatches.size() == 0) {
                 continue;
             }
+            if (knownMatches.size() > 1) {
+                System.out.println("collision size: "+knownMatches.size());
+            }
             // choose random data point from the set
             DataPoint dp = knownMatches.iterator().next();
             int songId = dp.getTrackId();
@@ -67,8 +70,9 @@ public class RangeExtractor extends Extractor {
                 
         Map<Integer, Double> scores = new HashMap<Integer, Double>();
         for (int songId : matches.keySet()) {
-            double percentageMatch = checkTimes(matches.get(songId), times.get(songId));
-            scores.put(songId, percentageMatch);
+            //System.out.println("num matches for song id: "+songId+": "+matches.get(songId));
+            //double percentageMatch = checkTimes(matches.get(songId), times.get(songId));
+            scores.put(songId, matches.get(songId).size()*1.0);//percentageMatch);
         }
         return scores;
     }

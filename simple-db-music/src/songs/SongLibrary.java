@@ -71,6 +71,7 @@ public class SongLibrary {
             songNameTable = Utility.openHeapFile(2, songNameFile, songNameTableTd);
             Database.getCatalog().addTable(songNameTable);
         }
+        //createDatabase(songFolder);
     }
 
     private void createDatabase(File songFolder) {
@@ -91,6 +92,8 @@ public class SongLibrary {
                 continue;
             }
             Set<DataPoint> dataPoints = extractor.extractDataPoints(spectrogram, songNum);
+            System.out.println(name+" has "+dataPoints.size());
+            tupCount += dataPoints.size();
             for (DataPoint p  : dataPoints) {
                 Tuple tupleDataPoint = new Tuple(btreeTd);
                 tupleDataPoint.setField(0, new IntField(p.getHash()));
@@ -100,7 +103,15 @@ public class SongLibrary {
                     Database.getBufferPool().insertTuple(tid, btree.getId(), tupleDataPoint);
                     tupCount++;
                 } catch (Exception e) {
+                    System.out.println("happening on song "+songNum);
                     e.printStackTrace();
+                    try {
+                        Database.getBufferPool().flushAllPages();
+                    } catch (Exception e2) {
+                        e2.printStackTrace();
+                    }
+                    System.out.println("error creating db, exiting early. "+tupCount+" tuples inserted");
+                    System.exit(0);
                 }
             }
             Tuple songTuple = new Tuple(songNameTableTd);
@@ -114,8 +125,8 @@ public class SongLibrary {
             System.out.println("done!");
             songNum++;
         }
+        System.out.println("total points extracted: "+tupCount);
         try {
-            System.out.println("done creating db! "+tupCount+" tuples inserted");
             System.out.println("Flushing pages...");
             Database.getBufferPool().flushAllPages();
             System.out.println("done!");
@@ -128,6 +139,7 @@ public class SongLibrary {
             int readCount = 0;
             while (it.hasNext()) {
                 readCount++;
+                if (readCount % 100000 == 0) System.out.println("read "+readCount+"tuples");
                 it.next();
             }
             System.out.println("Read "+readCount+"while scanning over db");
@@ -135,7 +147,7 @@ public class SongLibrary {
             e.printStackTrace();
         }
         // Uncomment this to create a clustered version of the database in a separate file
-        //clusterDb();
+        // clusterDb();
     }
     
     private void clusterDb() {
@@ -149,6 +161,9 @@ public class SongLibrary {
             while (it.hasNext()) {
                 count++;
                 Database.getBufferPool().insertTuple(tid, clusteredDb.getId(), it.next());
+                if (count % 100000 == 0) {
+                    System.out.println(count+" tuples inserted");
+                }
             }
             it.close();
             System.out.println("Succesfully clustered db! "+count+" tuples inserted");
@@ -167,11 +182,16 @@ public class SongLibrary {
         }
         // assigning a unique song id
         Set<DataPoint> samplePoints = extractor.extractDataPoints(spectrogram, -1);
-        Map<Integer, Double> songIdToScore = extractor.matchPoints(samplePoints, btree, tid);
-        long duration = System.currentTimeMillis() - time;
-        System.out.println("Scores: "+convertToSongNames(songIdToScore).toString());
-        Database.getBufferPool().flushAllPages();
-        return duration;
+        try {
+            Map<Integer, Double> songIdToScore = extractor.matchPoints(samplePoints, btree, tid);
+            long duration = System.currentTimeMillis() - time;
+            System.out.println("Scores: "+convertToSongNames(songIdToScore).toString());
+            Database.getBufferPool().flushAllPages();
+            return duration;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
     
     private Map<String, Double> convertToSongNames(Map<Integer, Double> songIdToScore) throws TransactionAbortedException, DbException {
@@ -191,5 +211,30 @@ public class SongLibrary {
             }
         }
         return songToScore;
+    }
+    
+    public Map<String, Double> getDatabaseFrequencies() throws NoSuchElementException, DbException, TransactionAbortedException {
+        
+        Map<Integer, Double> songToCount = new HashMap<Integer, Double>();
+        DbFileIterator it = btree.iterator(tid);
+        it.open();
+        int count = 0;
+        while (it.hasNext()) {
+            Tuple t = it.next();
+            int trackId = ((IntField) t.getField(2)).getValue();
+            Double d = songToCount.get(trackId);
+            if (d == null) {
+                d = (double) 0;
+            }
+            d++;
+            count++;
+            songToCount.put(trackId, d);
+            if (count % 100000 == 0) {
+                System.out.println(count +" tuples processed");
+            }
+         }
+        System.out.println(count+ " tuples in db");
+        return convertToSongNames(songToCount);
+            
     }
 }
