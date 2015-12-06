@@ -26,7 +26,7 @@ public class BufferPool {
     /** Default number of pages passed to the constructor. This is used by
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
-    public static final int DEFAULT_PAGES = 1000;//50;
+    public static final int DEFAULT_PAGES = 500;//50;
     
     private Map<PageId, Page> pages;
     private ArrayList<PageId> cachedPageIds = new ArrayList<PageId>();
@@ -98,18 +98,25 @@ public class BufferPool {
     		// if cache is full, evict a page
             //synchronized (cachedPageIds) {
         	if (this.pages.size() >= this.maxNumPages) {
-        		this.evictPage();
+        		this.evictRandomPage();
         	}
         	this.pages.put(pid, page);
         	if (!cachedPageIds.contains(pid)) {
         		this.cachedPageIds.add(pid);
         	}
+        	updateMRU(pid);
         	//}
     		return page;
     	/*} else {
     		// couldn't get lock, so we try again
     		return getPage(tid, pid, perm);
     	}*/
+    }
+    
+    private void updateMRU(PageId pid) {
+    	if (cachedPageIds.contains(pid)) cachedPageIds.remove(pid);
+    	
+    	cachedPageIds.add(pid);
     }
 
     /**
@@ -164,6 +171,7 @@ public class BufferPool {
         		if (cachedPage.isPageDirty() != null && cachedPage.isPageDirty().equals(tid)) {
         			// restore page to on-disk state
         			this.pages.put(pid, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+        			updateMRU(pid);
         		}
         	}
     	}
@@ -193,6 +201,7 @@ public class BufferPool {
         for (Page p : dirtiedPages) {
         	p.markPageDirty(true, tid);
         	this.pages.put(p.getId(), p);
+        	updateMRU(p.getId());
         }
     }
 
@@ -216,6 +225,7 @@ public class BufferPool {
     	for (Page p : dirtiedPages) {
         	p.markPageDirty(true, tid);
         	this.pages.put(p.getId(), p);
+        	updateMRU(p.getId());
         }
     }
 
@@ -286,7 +296,7 @@ public class BufferPool {
     	for (PageId pid : this.cachedPageIds) {
     		Page cachedPage = this.pages.get(pid);
     		boolean isLeaf = (cachedPage instanceof BTreeLeafPage);
-    		// evict earliest leaf page
+    		// evict LRU leaf page
     		if (isLeaf) {
     			try {
 					this.flushPage(pid);
@@ -300,6 +310,47 @@ public class BufferPool {
     	}
     	throw new DbException("All pages are dirty, cannot evict any.");
         //}
+    }
+    
+    private void evictMRUPage() throws DbException {
+        //synchronized (cachedPageIds) {
+    	for (int i = cachedPageIds.size() - 1; i >= 0; i--) {
+    		PageId pid = cachedPageIds.get(i);
+    		Page cachedPage = pages.get(pid);
+    		boolean isLeaf = (cachedPage instanceof BTreeLeafPage);
+    		// evict MRU leaf page
+    		if (isLeaf) {
+    			try {
+					this.flushPage(pid);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				this.cachedPageIds.remove(pid);
+    			this.pages.remove(pid);
+    			return;
+    		}
+    	}
+    	throw new DbException("All pages are dirty, cannot evict any.");
+    }
+    
+    private void evictRandomPage() throws DbException {
+        //synchronized (cachedPageIds) {
+    	for (PageId pid : pages.keySet()) {
+    		System.out.println(cachedPageIds.indexOf(pid));
+    		Page cachedPage = pages.get(pid);
+    		boolean isLeaf = (cachedPage instanceof BTreeLeafPage);
+    		if (isLeaf) {
+    			try {
+					this.flushPage(pid);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				this.cachedPageIds.remove(pid);
+    			this.pages.remove(pid);
+    			return;
+    		}
+    	}
+    	throw new DbException("All pages are dirty, cannot evict any.");
     }
 
 }

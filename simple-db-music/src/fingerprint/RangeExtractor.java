@@ -47,11 +47,11 @@ public class RangeExtractor extends Extractor {
             if (knownMatches.size() == 0) {
                 continue;
             }
-            /*
-            if (knownMatches.size() > 1) {
-                System.out.println("collision size: "+knownMatches.size());
-            }
-            */
+            
+//            if (knownMatches.size() > 1) {
+//                System.out.println("collision size: "+knownMatches.size());
+//            }
+            
             // choose random data point from the set
             DataPoint dp = knownMatches.iterator().next();
             int songId = dp.getTrackId();
@@ -80,8 +80,7 @@ public class RangeExtractor extends Extractor {
     }
     
     private double checkTimes(List<Integer> real, List<Integer> recorded) {
-        double total = real.size() - 1.0;
-        if (total == 0) return 0;
+        double total = real.size();
         int correct = 0;
         
         for (int i = 1; i < real.size(); i++) {

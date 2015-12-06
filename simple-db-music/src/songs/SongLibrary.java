@@ -92,7 +92,6 @@ public class SongLibrary {
             }
             Set<DataPoint> dataPoints = extractor.extractDataPoints(spectrogram, songNum);
             System.out.println(name+" has "+dataPoints.size());
-            tupCount += dataPoints.size();
             for (DataPoint p  : dataPoints) {
                 Tuple tupleDataPoint = new Tuple(btreeTd);
                 tupleDataPoint.setField(0, new IntField(p.getHash()));
@@ -191,7 +190,6 @@ public class SongLibrary {
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(3)
                 .forEach(System.out::println);
-            System.out.println("end scores");
             //System.out.println("Scores: "+convertedScores.);
             Database.getBufferPool().flushAllPages();
             return duration;
