@@ -17,6 +17,9 @@ import simpledb.TransactionId;
 public class RangeExtractor extends Extractor {
     
     private static final int[] FREQ_RANGES = new int[] {12, 24, 36, 48, 60, 72, 100};
+    
+    private static final int EARLY_LEAD_THRESHOLD = 20;
+    private static final int EARLY_COMPETITOR_THRESHOLD = 5;
 
     @Override
     public Set<DataPoint> extractDataPoints(double[][] spectrogram, int trackId) {
@@ -42,23 +45,22 @@ public class RangeExtractor extends Extractor {
         HashMap<Integer, List<Integer>> times = new HashMap<Integer, List<Integer>>();
         
         Set<DataPoint> knownMatches = new HashSet<DataPoint>();
+        int maxVotes = -1;
+        int maxSongVotes = -1;
+        int secondMostVotes = -1;
         for (DataPoint samplePoint: samplePoints) {
             knownMatches =  getPointsMatchingHash(samplePoint.getHash(), btree, tid);
             if (knownMatches.size() == 0) {
                 continue;
             }
-            /*
-            if (knownMatches.size() > 1) {
-                System.out.println("collision size: "+knownMatches.size());
-            }
-            */
             // choose random data point from the set
             DataPoint dp = knownMatches.iterator().next();
             int songId = dp.getTrackId();
-
+            int curNumMatches;
             if (matches.containsKey(songId) && times.containsKey(songId)) {
                 matches.get(songId).add(dp.getTimeOffset());
                 times.get(songId).add(samplePoint.getTimeOffset());
+                curNumMatches = matches.get(songId).size();
             } else {
                 List<Integer> newMatch = new ArrayList<Integer>();
                 newMatch.add(dp.getTimeOffset());
@@ -67,6 +69,20 @@ public class RangeExtractor extends Extractor {
                 List<Integer> newTime = new ArrayList<Integer>();
                 newTime.add(samplePoint.getTimeOffset());
                 times.put(songId, newTime);
+                curNumMatches = 1;
+            }
+            if (curNumMatches > maxVotes) {
+                if (maxSongVotes != songId) {
+                    secondMostVotes = maxVotes;
+                }
+                maxVotes = curNumMatches;
+                maxSongVotes = songId;
+                if (maxVotes > EARLY_LEAD_THRESHOLD && secondMostVotes <= EARLY_COMPETITOR_THRESHOLD) {
+                    Map<Integer, Double> early = new HashMap<>();
+                    // -1 is the signal that not all votes were tabulated
+                    early.put(songId, -1.0);
+                    return early;
+                }
             }
         }
                 
