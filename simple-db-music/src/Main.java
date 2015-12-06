@@ -10,8 +10,6 @@ public class Main {
     //private static final File SAMPLE_SONG_FOLDER = recorder.wavFile.getParentFile();
     private static final File SAMPLE_SONG_FOLDER = new File("sample_songs");
     
-    //private static final String SAMPLE_SONG = "recorded_music/RecordAudio.wav";
-    
     // record duration, in milliseconds
     private static final long RECORD_TIME = 10000;  // 10 seconds
  

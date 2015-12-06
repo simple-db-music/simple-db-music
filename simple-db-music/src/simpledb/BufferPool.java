@@ -3,7 +3,8 @@ package simpledb;
 import java.io.*;
 
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -27,7 +28,7 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 1000;//50;
     
-    private ConcurrentHashMap<PageId, Page> pages;
+    private Map<PageId, Page> pages;
     private ArrayList<PageId> cachedPageIds = new ArrayList<PageId>();
     private final int maxNumPages;
     
@@ -40,7 +41,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
-    	this.pages = new ConcurrentHashMap<PageId, Page>(numPages);
+    	this.pages = new HashMap<PageId, Page>(numPages);
     	this.maxNumPages = numPages;
     	this.pageLockManager = new PageLockManager();
     }
@@ -223,7 +224,7 @@ public class BufferPool {
      * NB: Be careful using this routine -- it writes dirty data to disk so will
      *     break simpledb if running in NO STEAL mode.
      */
-    public synchronized void flushAllPages() throws IOException {
+    public void flushAllPages() throws IOException {
         // some code goes here
     	for (PageId pid : this.pages.keySet()) {
     		this.flushPage(pid);
@@ -239,7 +240,7 @@ public class BufferPool {
         Also used by B+ tree files to ensure that deleted pages
         are removed from the cache so they can be reused safely
     */
-    public synchronized void discardPage(PageId pid) {
+    public void discardPage(PageId pid) {
         // some code goes here
         this.pages.remove(pid);
         //synchronized (cachedPageIds) {
@@ -251,7 +252,7 @@ public class BufferPool {
      * Flushes a certain page to disk
      * @param pid an ID indicating the page to flush
      */
-    private synchronized  void flushPage(PageId pid) throws IOException {
+    private  void flushPage(PageId pid) throws IOException {
         // some code goes here
     	Page p = this.pages.get(pid);
     	if (p.isPageDirty() != null) {
@@ -262,7 +263,7 @@ public class BufferPool {
 
     /** Write all pages of the specified transaction to disk.
      */
-    public synchronized  void flushPages(TransactionId tid) throws IOException {
+    public  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
         //synchronized (cachedPageIds) {

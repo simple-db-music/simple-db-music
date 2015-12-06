@@ -2,6 +2,7 @@ package songs;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -40,7 +41,7 @@ public class SongLibrary {
     private final TupleDesc btreeTd;
     private final TupleDesc songNameTableTd;
     private final TransactionId tid;
-
+    
     public SongLibrary(File songFolder, boolean useRangeExtraction, boolean useClustered) throws IOException {
         if (useRangeExtraction) {
             extractor = new RangeExtractor();
@@ -52,7 +53,6 @@ public class SongLibrary {
         } else {
             dbFile = new File("song_db");
         }
-        
         btreeTd = new TupleDesc(new Type[] {Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE},
                 new String[] {"Hash", "Time Offset", "Track ID"});
         songNameTableTd = new TupleDesc(new Type[]{Type.STRING_TYPE, Type.INT_TYPE},
@@ -71,7 +71,6 @@ public class SongLibrary {
             songNameTable = Utility.openHeapFile(2, songNameFile, songNameTableTd);
             Database.getCatalog().addTable(songNameTable);
         }
-        //createDatabase(songFolder);
     }
 
     private void createDatabase(File songFolder) {
@@ -167,7 +166,7 @@ public class SongLibrary {
             }
             it.close();
             System.out.println("Succesfully clustered db! "+count+" tuples inserted");
-            //Database.getBufferPool().flushAllPages();
+            Database.getBufferPool().flushAllPages();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -200,6 +199,16 @@ public class SongLibrary {
             e.printStackTrace();
             return -1;
         }
+    }
+    
+    public Set<String> getSongNames() throws NoSuchElementException, TransactionAbortedException, DbException {
+        Set<String> songNames = new HashSet<String>();
+        SeqScan f = new SeqScan(tid, songNameTable.getId());
+        f.open();
+        while (f.hasNext()) {
+            songNames.add(((StringField) f.next().getField(0)).getValue()); 
+        }
+        return songNames;
     }
     
     private Map<String, Double> convertToSongNames(Map<Integer, Double> songIdToScore) throws TransactionAbortedException, DbException {

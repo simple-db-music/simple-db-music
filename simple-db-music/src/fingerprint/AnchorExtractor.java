@@ -29,10 +29,10 @@ public class AnchorExtractor extends Extractor {
     public Map<Integer, Double> matchPoints(Set<DataPoint> samplePoints,
            BTreeFile btree, TransactionId tid) throws NoSuchElementException, DbException, TransactionAbortedException {        
         Map<Integer, Map<Integer, Integer>> songToOffsetVotes = new HashMap<Integer, Map<Integer, Integer>>();        
-        System.out.println("sorting sample points...");
+        //System.out.println("sorting sample points...");
         List<DataPoint> sampleList = new ArrayList<DataPoint>(samplePoints);
         //Collections.sort(sortedSamplePoints, (p1, p2) -> p1.getHash() - p2.getHash());;
-        System.out.println("done!");
+        //System.out.println("done!");
         int maxVotes = -1;
         int maxSong = -1;
         int maxVotes2 = -1;
@@ -40,19 +40,17 @@ public class AnchorExtractor extends Extractor {
         int count = 0;
         //int totalMatching = 0;
        for (DataPoint dp : randomSample(sampleList)) {
-        //for (DataPoint dp : sortedSamplePoints) {
+        //for (DataPoint dp : sampleList) {
         //randomSample(sampleList).parallelStream().forEach(dp -> {
             int curHash = dp.getHash();
-            /*
             if (++count % 500 == 0) {
                 System.out.println("Cur sample dp: "+count);
             }
-            */
             Set<DataPoint> knownPoints;
             try {
                 knownPoints = getPointsMatchingHash(curHash, btree, tid);
               //totalMatching += knownPoints.size();
-                //System.out.println("num points matched to: "+knownPoints.size());
+                System.out.println("num points matched to: "+knownPoints.size());
                 for (DataPoint knownPoint : knownPoints) {
                     /*
                     int trackId = knownPoint.getTrackId();

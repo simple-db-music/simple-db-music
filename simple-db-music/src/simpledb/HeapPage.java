@@ -316,7 +316,7 @@ public class HeapPage implements Page {
         	int zeros = 8 - ones;
         	empty += zeros;
         }
-        return empty;
+        return empty - 2;
     }
 
     /**

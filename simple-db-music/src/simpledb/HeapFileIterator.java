@@ -51,7 +51,7 @@ public class HeapFileIterator implements DbFileIterator {
         	return i.next();
         }
         if (this.currentPage < numPages - 1) {
-        	this.currentPage += 1;
+        	this.currentPage += 1;            
         	open();
         }
         return i.next();
