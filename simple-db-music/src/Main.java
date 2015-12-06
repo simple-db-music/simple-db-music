@@ -16,7 +16,7 @@ public class Main {
     private static final long RECORD_TIME = 10000;  // 10 seconds
  
     
-    private static final boolean USE_RANGE_EXTRACTION = false;
+    private static final boolean USE_RANGE_EXTRACTION = true;
     private static final boolean USE_CLUSTERED_DB = false;
 
     public static void main(String[] args) throws Exception {//IOException, NoSuchElementException, DbException, TransactionAbortedException {
@@ -57,6 +57,7 @@ public class Main {
             count++;
             System.out.println("Matching took "+ duration + " ms");
         }
+        
         
         System.out.println("\n\nOverall avg matching duration: "+1.0*totalDuration/count+" ms");
     }

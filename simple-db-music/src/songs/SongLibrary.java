@@ -192,6 +192,7 @@ public class SongLibrary {
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(3)
                 .forEach(System.out::println);
+            System.out.println("end scores");
             //System.out.println("Scores: "+convertedScores.);
             Database.getBufferPool().flushAllPages();
             return duration;

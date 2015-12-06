@@ -47,9 +47,11 @@ public class RangeExtractor extends Extractor {
             if (knownMatches.size() == 0) {
                 continue;
             }
+            /*
             if (knownMatches.size() > 1) {
                 System.out.println("collision size: "+knownMatches.size());
             }
+            */
             // choose random data point from the set
             DataPoint dp = knownMatches.iterator().next();
             int songId = dp.getTrackId();
