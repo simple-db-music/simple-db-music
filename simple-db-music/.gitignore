@@ -4,3 +4,4 @@ bin/
 sample_music/
 .DS_Store
 src/Test.java
+RecordAudio/RecordAudio.wav
