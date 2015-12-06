@@ -2,7 +2,6 @@ package simpledb;
 
 import java.io.Serializable;
 
-
 /**
  * JoinPredicate compares fields of two tuples using a predicate. JoinPredicate
  * is most likely used by the Join operator.
@@ -10,10 +9,9 @@ import java.io.Serializable;
 public class JoinPredicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    
-    private final int leftTupleFieldNumber;
-    private final int rightTupleFieldNumber;
-    private final Predicate.Op comparisonOperation;
+    private int field1;
+    private int field2;
+    private Predicate.Op op;
 
     /**
      * Constructor -- create a new predicate over two fields of two tuples.
@@ -30,9 +28,10 @@ public class JoinPredicate implements Serializable {
      * @see Predicate
      */
     public JoinPredicate(int field1, Predicate.Op op, int field2) {
-        this.leftTupleFieldNumber = field1;
-        this.rightTupleFieldNumber = field2;
-        this.comparisonOperation = op;
+        // some code goes here
+    	this.field1 = field1;
+    	this.field2 = field2;
+    	this.op = op;
     }
 
     /**
@@ -42,20 +41,26 @@ public class JoinPredicate implements Serializable {
      * @return true if the tuples satisfy the predicate.
      */
     public boolean filter(Tuple t1, Tuple t2) {
-        Field leftVal = t1.getField(leftTupleFieldNumber);
-        Field rightVal = t2.getField(rightTupleFieldNumber);
-        return leftVal.compare(comparisonOperation, rightVal);
+        // some code goes here
+    	Predicate pred = new Predicate(this.field1, this.op, t2.getField(this.field2));
+    	return pred.filter(t1);
     }
     
-    public int getField1() {
-        return leftTupleFieldNumber; 
+    public int getField1()
+    {
+        // some code goes here
+        return this.field1;
     }
     
-    public int getField2() {
-        return rightTupleFieldNumber;
+    public int getField2()
+    {
+        // some code goes here
+        return this.field2;
     }
     
-    public Predicate.Op getOperator() {
-        return comparisonOperation;
+    public Predicate.Op getOperator()
+    {
+        // some code goes here
+        return this.op;
     }
 }

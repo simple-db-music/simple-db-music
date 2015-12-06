@@ -6,12 +6,14 @@ import java.util.*;
  * Filter is an operator that implements a relational select.
  */
 public class Filter extends Operator {
+	
+	private Predicate p;
+	private DbIterator child;
+	private TupleDesc td;
+	private ArrayList<Tuple> childTups = new ArrayList<Tuple>();
+	private Iterator<Tuple> it;
 
     private static final long serialVersionUID = 1L;
-    
-    private DbIterator child;
-    private TupleDesc tupleDesc;
-    private final Predicate predicate;
 
     /**
      * Constructor accepts a predicate to apply and a child operator to read
@@ -23,32 +25,45 @@ public class Filter extends Operator {
      *            The child operator
      */
     public Filter(Predicate p, DbIterator child) {
-        this.child = child;
-        this.tupleDesc = child.getTupleDesc();
-        this.predicate = p;
+        // some code goes here
+    	this.p = p;
+    	this.child = child;
+    	this.td = child.getTupleDesc();
     }
 
     public Predicate getPredicate() {
-        return predicate;
+        // some code goes here
+        return this.p;
     }
 
     public TupleDesc getTupleDesc() {
-        return tupleDesc;
+        // some code goes here
+        return this.td;
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        child.open();
+        // some code goes here
+    	child.open();
+    	while (child.hasNext()) {
+    		Tuple nextTuple = child.next();
+    		if (p.filter(nextTuple)) {
+    			childTups.add(nextTuple);
+    		}
+    	}
+        it = childTups.iterator();
         super.open();
     }
 
     public void close() {
-        super.close();
-        child.close();
+        // some code goes here
+    	super.close();
+    	it = null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        child.rewind();
+        // some code goes here
+    	it = childTups.iterator();
     }
 
     /**
@@ -62,24 +77,23 @@ public class Filter extends Operator {
      */
     protected Tuple fetchNext() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        while (child.hasNext()) {
-            Tuple t = child.next();
-            if (predicate.filter(t)) {
-                return t;
-            }
-        }
-        return null;
+        // some code goes here
+    	if (it != null && it.hasNext()) {
+            return it.next();
+        } else
+            return null;
     }
 
     @Override
     public DbIterator[] getChildren() {
-        return new DbIterator[]{child};
+        // some code goes here
+    	return new DbIterator[] { this.child };
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
-        this.child = children[0];
-        this.tupleDesc = child.getTupleDesc();
+        // some code goes here
+    	this.child = children[0];
     }
 
 }

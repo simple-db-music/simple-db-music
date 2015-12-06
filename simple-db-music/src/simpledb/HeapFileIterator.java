@@ -1,69 +1,69 @@
 package simpledb;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 public class HeapFileIterator implements DbFileIterator {
+	
+	private Iterator<Tuple> i = null;
+	private final TransactionId tid;
+	private final int hid;
+	private final int numPages;
+	int currentPage = 0;
+	
+    public HeapFileIterator(TransactionId tid, int hid, int numPages) {
+    	this.tid = tid;
+    	this.hid = hid;
+    	this.numPages = numPages;
+    }	
 
-    private final HeapFile heapFile;
-    private Page curPage;
-    private Iterator<Tuple> curPageIterator;
-    private HeapPageId curPageId;
-    private final TransactionId tid;
-    private boolean open;
-    
-    public HeapFileIterator(HeapFile heapFile, TransactionId tid) {
-        this.heapFile = heapFile;
-        this.tid = tid;
-        this.open = false;
-    }
-    
-    private void setIteratorToPageNum(int pageNum) throws DbException, TransactionAbortedException {
-        this.curPageId = new HeapPageId(heapFile.getId(), pageNum);
-        // just getting READ access since iterator does not modify the page
-        this.curPage = Database.getBufferPool().getPage(tid, curPageId, Permissions.READ_ONLY);
-        this.curPageIterator = ((HeapPage) this.curPage).iterator();
-    }
-
-    @Override
     public void open() throws DbException, TransactionAbortedException {
-        setIteratorToPageNum(0);
-        open = true;
+		HeapPageId pid = new HeapPageId(this.hid, this.currentPage);
+		HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
+		i = p.iterator();
     }
 
-    @Override
     public boolean hasNext() throws DbException, TransactionAbortedException {
-        if (!open) {
-            return false;
+    	if (i == null) {
+    		return false;
+    	}
+        if (i.hasNext()) {
+        	return true;
         }
-        while (!curPageIterator.hasNext()) {
-            int curPageNum = curPageId.pageNumber();
-            if (curPageNum + 1 == this.heapFile.numPages()) {
-                // This is the last page and it's out of tuples
-                return false;
-            }
-            setIteratorToPageNum(curPageNum + 1);
+        // check to see if future pages have tuples
+        int cp = this.currentPage;
+        while (cp < numPages - 1) {
+        	HeapPageId pid = new HeapPageId(this.hid, cp + 1);
+    		HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
+    		if (page.getNumEmptySlots() >= page.numSlots) {
+    			cp++;
+    		} else {
+    			return true;
+    		}
         }
-        return true;
+        return false;
     }
 
-    @Override
-    public Tuple next() throws DbException, TransactionAbortedException,
-            NoSuchElementException {
-        if (!this.hasNext()) {
-            throw new NoSuchElementException();
+    public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+    	if (i == null) {
+    		throw new NoSuchElementException();
+    	}
+        if (i.hasNext()) {
+        	return i.next();
         }
-        return curPageIterator.next();
+        if (this.currentPage < numPages - 1) {
+        	this.currentPage += 1;
+        	open();
+        }
+        return i.next();
     }
 
-    @Override
     public void rewind() throws DbException, TransactionAbortedException {
-        setIteratorToPageNum(0);
+        close();
+        this.currentPage = 0;
+        open();
     }
 
-    @Override
     public void close() {
-        open = false;
+        i = null;
     }
-
 }

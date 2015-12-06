@@ -59,6 +59,5 @@ public class Main {
         }
         
         System.out.println("\n\nOverall avg matching duration: "+1.0*totalDuration/count+" ms");
-        //System.out.println("song to freq: "+songLibrary.getDatabaseFrequencies());
     }
 }

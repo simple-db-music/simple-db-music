@@ -2,10 +2,10 @@ package simpledb;
 
 /** Unique identifier for HeapPage objects. */
 public class HeapPageId implements PageId {
+	
+	private int tableId;
+	private int pgNo;
 
-    private final int tableId;
-    private final int pageNumber;
-    
     /**
      * Constructor. Create a page id structure for a specific page of a
      * specific table.
@@ -14,13 +14,15 @@ public class HeapPageId implements PageId {
      * @param pgNo The page number in that table.
      */
     public HeapPageId(int tableId, int pgNo) {
-        this.tableId = tableId;
-        this.pageNumber = pgNo;
+        // some code goes here
+    	this.tableId = tableId;
+    	this.pgNo = pgNo;
     }
 
     /** @return the table associated with this PageId */
     public int getTableId() {
-        return tableId;
+        // some code goes here
+        return this.tableId;
     }
 
     /**
@@ -28,7 +30,8 @@ public class HeapPageId implements PageId {
      *   this PageId
      */
     public int pageNumber() {
-        return pageNumber;
+        // some code goes here
+        return this.pgNo;
     }
 
     /**
@@ -38,11 +41,8 @@ public class HeapPageId implements PageId {
      * @see BufferPool
      */
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + pageNumber;
-        result = prime * result + tableId;
-        return result;
+        // some code goes here
+        return (Integer.toString(this.tableId) + Integer.toString(this.pgNo)).hashCode();
     }
 
     /**
@@ -52,19 +52,12 @@ public class HeapPageId implements PageId {
      * @return true if the objects are equal (e.g., page numbers and table
      *   ids are the same)
      */
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        HeapPageId other = (HeapPageId) obj;
-        if (pageNumber != other.pageNumber)
-            return false;
-        if (tableId != other.tableId)
-            return false;
-        return true;
+    public boolean equals(Object o) {
+        // some code goes here
+    	if (o instanceof PageId) {
+    		return (((PageId) o).getTableId() == this.getTableId() && ((PageId) o).pageNumber() == this.pgNo);
+    	}
+        return false;
     }
 
     /**
@@ -81,4 +74,5 @@ public class HeapPageId implements PageId {
 
         return data;
     }
+
 }

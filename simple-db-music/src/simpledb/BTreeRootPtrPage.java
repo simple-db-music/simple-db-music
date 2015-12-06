@@ -221,5 +221,6 @@ public class BTreeRootPtrPage implements Page {
 	public static int getPageSize() {
 		return PAGE_SIZE;
 	}
+
 }
 

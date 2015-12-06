@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The Catalog keeps track of all available tables in the database and their
@@ -17,17 +17,24 @@ import java.util.function.Function;
  * @Threadsafe
  */
 public class Catalog {
+	
+	private ArrayList<Integer> tables;
+	private ConcurrentHashMap<String, Integer> nameToId;
+	private ConcurrentHashMap<Integer, DbFile> idToFile;
+	private ConcurrentHashMap<Integer, String> idToKey;
+	private ConcurrentHashMap<Integer, String> idToName;
 
-    private final Map<String, Table> nameToTable;
-    private final Map<Integer, Table> idToTable;
-    
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        nameToTable = new HashMap<String, Table>();
-        idToTable = new HashMap<Integer, Table>();
+        // some code goes here
+    	tables = new ArrayList<Integer>();
+    	nameToId = new ConcurrentHashMap<String, Integer>();
+    	idToFile = new ConcurrentHashMap<Integer, DbFile>();
+    	idToKey = new ConcurrentHashMap<Integer, String>();
+    	idToName = new ConcurrentHashMap<Integer, String>();
     }
 
     /**
@@ -40,9 +47,13 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        Table table = new Table(name, file, pkeyField);
-        nameToTable.put(name, table);
-        idToTable.put(file.getId(), table);
+        // some code goes here
+    	this.tables.add(file.getId());
+    	this.nameToId.put(name, file.getId());
+    	this.idToFile.put(file.getId(), file);
+    	this.idToKey.put(file.getId(), pkeyField);
+    	this.idToName.put(file.getId(), name);
+    	
     }
 
     public void addTable(DbFile file, String name) {
@@ -59,22 +70,17 @@ public class Catalog {
     public void addTable(DbFile file) {
         addTable(file, (UUID.randomUUID()).toString());
     }
-    
-    // Grabs the field (using fieldGetter) off of the table mapped to by the map from the key argument 
-    // (if present in the map)
-    private <K, T> T getTableField(Map<K, Table> map, K key, Function<Table, T> fieldGetter) {
-        if (!map.containsKey(key)) {
-            throw new NoSuchElementException();
-        }
-        return fieldGetter.apply(map.get(key));
-    }
 
     /**
      * Return the id of the table with a specified name,
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        return getTableField(nameToTable, name, Table::getId);
+        // some code goes here
+    	if (name == null || !this.nameToId.containsKey(name)) {
+    		throw new NoSuchElementException(); 
+    	}
+    	return this.nameToId.get(name);
     }
 
     /**
@@ -84,7 +90,8 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        return getTableField(idToTable, tableid, Table::getTupleDesc);
+        // some code goes here
+    	return this.idToFile.get(tableid).getTupleDesc();
     }
 
     /**
@@ -94,25 +101,32 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        return getTableField(idToTable, tableid, Table::getFile);
+        // some code goes here
+    	return this.idToFile.get(tableid);
     }
 
     public String getPrimaryKey(int tableid) {
-        return getTableField(idToTable, tableid, Table::getPkeyFieldName);
+        // some code goes here
+        return this.idToKey.get(tableid);
     }
 
     public Iterator<Integer> tableIdIterator() {
-        return idToTable.keySet().iterator();
+        // some code goes here
+    	return this.tables.iterator();
     }
 
     public String getTableName(int id) {
-        return getTableField(idToTable, id, Table::getName);
+        // some code goes here
+    	return this.idToName.get(id);
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        idToTable.clear();
-        nameToTable.clear();
+        // some code goes here
+    	nameToId = new ConcurrentHashMap<String, Integer>();
+    	idToFile = new ConcurrentHashMap<Integer, DbFile>();
+    	idToKey = new ConcurrentHashMap<Integer, String>();
+    	idToName = new ConcurrentHashMap<Integer, String>();
     }
     
     /**

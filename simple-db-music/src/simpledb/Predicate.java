@@ -8,9 +8,6 @@ import java.io.Serializable;
 public class Predicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private final int fieldNo;
-    private final Op comparisonOp;
-    private final Field rightOperand;
 
     /** Constants used for return codes in Field.compare */
     public enum Op implements Serializable {
@@ -47,6 +44,10 @@ public class Predicate implements Serializable {
 
     }
     
+    private int field;
+    private Op op;
+    private Field operand;
+    
     /**
      * Constructor.
      * 
@@ -58,30 +59,37 @@ public class Predicate implements Serializable {
      *            field value to compare passed in tuples to
      */
     public Predicate(int field, Op op, Field operand) {
-        this.fieldNo = field;
-        this.comparisonOp = op;
-        this.rightOperand = operand;
+        // some code goes here
+    	this.field = field;
+    	this.op = op;
+    	this.operand = operand;
     }
 
     /**
      * @return the field number
      */
-    public int getField() {
-        return fieldNo;
+    public int getField()
+    {
+        // some code goes here
+        return this.field;
     }
 
     /**
      * @return the operator
      */
-    public Op getOp() {
-        return this.comparisonOp;
+    public Op getOp()
+    {
+        // some code goes here
+        return this.op;
     }
     
     /**
      * @return the operand
      */
-    public Field getOperand() {
-        return this.rightOperand;
+    public Field getOperand()
+    {
+        // some code goes here
+        return this.operand;
     }
     
     /**
@@ -95,8 +103,8 @@ public class Predicate implements Serializable {
      * @return true if the comparison is true, false otherwise.
      */
     public boolean filter(Tuple t) {
-        Field leftOperand = t.getField(fieldNo);
-        return leftOperand.compare(comparisonOp, rightOperand);
+        // some code goes here
+        return t.getField(this.field).compare(this.op, this.operand);
     }
 
     /**
@@ -104,7 +112,7 @@ public class Predicate implements Serializable {
      * operand_string
      */
     public String toString() {
-        return "Field = "+fieldNo+"; Comparison operation = "+comparisonOp+
-                "; Right operand = "+rightOperand;
+        // some code goes here
+        return "f = " + Integer.toString(this.field) + " op = " + this.op.toString() + " operand = " + this.operand.toString();
     }
 }

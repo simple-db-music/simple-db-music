@@ -1,7 +1,6 @@
 package simpledb;
 
 import java.util.*;
-import java.util.stream.IntStream;
 import java.io.*;
 
 /**
@@ -19,12 +18,11 @@ public class HeapPage implements Page {
     final byte header[];
     final Tuple tuples[];
     final int numSlots;
+    
+    private TransactionId dirtyTid = null;
 
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
-    
-    private boolean dirty;
-    private TransactionId dirtyingTransaction;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -69,10 +67,9 @@ public class HeapPage implements Page {
     /** Retrieve the number of tuples on this page.
         @return the number of tuples on this page
     */
-    private int getNumTuples() {
-        int pageSize = BufferPool.getPageSize();
-        int tupleSize = Database.getCatalog().getTupleDesc(this.pid.getTableId()).getSize();
-        return pageSize*8 / (tupleSize*8 + 1);
+    private int getNumTuples() {        
+        // some code goes here
+    	return (int) Math.floor((BufferPool.getPageSize() * 8) / (this.td.getSize() * 8 + 1));
     }
 
     /**
@@ -80,7 +77,9 @@ public class HeapPage implements Page {
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {        
-        return (int) Math.ceil(getNumTuples()/8.0);
+        // some code goes here
+        return (int) Math.ceil(getNumTuples() / 8.0);
+                 
     }
     
     /** Return a view of this page before it was modified
@@ -112,7 +111,8 @@ public class HeapPage implements Page {
      * @return the PageId associated with this page.
      */
     public HeapPageId getId() {
-        return this.pid;
+    	// some code goes here
+    	return this.pid;
     }
 
     /**
@@ -243,18 +243,15 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
-        RecordId rid = t.getRecordId();
-        if (rid == null || !rid.getPageId().equals(pid)) {
-            throw new DbException("Trying to delete tuple not present on page");
-        }
-        int spot = rid.tupleno();
-        if (!isSlotUsed(spot)) {
-            throw new DbException("Trying to delete a tuple from slot that is already empty");
-        }
-        markSlotUsed(spot, false);
-        // NOT clearing the tuple's record id to reflect it's no longer on the page because
-        // the tests do not expect this behavior - see https://piazza.com/class/idkhyh3lqzokv?cid=113
-        // t.setRecordId(null);
+        // some code goes here
+    	if (!t.getRecordId().getPageId().equals(this.pid)) {
+    		throw new DbException("wrong page");
+    	}
+    	int tupleno = t.getRecordId().tupleno();
+    	if (!this.isSlotUsed(tupleno)) {
+    		throw new DbException("tuple slot already empty");
+    	}
+    	this.markSlotUsed(tupleno, false);
     }
 
     /**
@@ -265,19 +262,22 @@ public class HeapPage implements Page {
      * @param t The tuple to add.
      */
     public void insertTuple(Tuple t) throws DbException {
-        if (getNumEmptySlots() == 0) {
-            throw new DbException("Trying to insert tuple onto full page");
-        }
-        if (!t.getTupleDesc().equals(td)) {
-            throw new DbException("Inserting tuple onto page with different tuple schema");
-        }
-        int spot = 0;
-        while (isSlotUsed(spot)) {
-            spot++;
-        }
-        tuples[spot] = t;
-        markSlotUsed(spot, true);
-        t.setRecordId(new RecordId(pid, spot));
+    	if (!t.getTupleDesc().equals(this.td)) {
+    		throw new DbException("tupledesc mismatch");
+    	}
+    	if (this.getNumEmptySlots() == 0) {
+    		throw new DbException("no empty slots");
+    	}
+    	// find first empty slot and fill it
+    	for (int i=0; i<this.numSlots; i++) {
+    		if (!this.isSlotUsed(i)) {
+    			RecordId rid = new RecordId(this.pid, i);
+    			t.setRecordId(rid);
+    			this.tuples[i] = t;
+    			this.markSlotUsed(i, true);
+    			return;
+    		}
+    	}
     }
 
     /**
@@ -285,69 +285,62 @@ public class HeapPage implements Page {
      * that did the dirtying
      */
     public void markPageDirty(boolean dirty, TransactionId tid) {
-        if (dirty) {
-            this.dirtyingTransaction = tid;
-        }
-        this.dirty = dirty;
+        // some code goes here
+    	if (dirty) {
+    		this.dirtyTid = tid;
+    	} else {
+    		this.dirtyTid = null;
+    	}
     }
 
     /**
      * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
      */
     public TransactionId isPageDirty() {
-        if (!dirty) {
-            return null;
-        }
-        return dirtyingTransaction;
-    }
-    
-    // Tests if the a specific bit in the byte arr is set.
-    // See http://stackoverflow.com/questions/18931283/checking-individual-bits-in-a-byte-array-in-java
-    private boolean isSet(byte[] arr, int bit) {
-        int index = bit / 8;
-        int bitPosition = bit % 8;
-        
-        return (arr[index] >> bitPosition & 1) == 1;
-    }
-    
-    // Sets the "bitNum"th bit in the byte[] arr either on or off, depending
-    // on the value of the passed in boolean.
-    private void set(byte[] arr, int bitNum, boolean on) {
-        int index = bitNum / 8;
-        int bitPosition = bitNum % 8;
-        
-        if (on) {
-            arr[index] = (byte) (arr[index] | (1 << bitPosition));
-        } else {
-            arr[index] = (byte) (arr[index] & ~(1 << bitPosition));
-        }
+        // some code goes here
+    	return this.dirtyTid;      
     }
 
     /**
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        int emptyCount = 0;
-        for (int i = 0; i < getNumTuples(); i ++) {
-            if (!isSet(header, i)) {
-                emptyCount++;
-            }
+        // some code goes here
+    	int empty = 0;
+        for (int i=0; i < this.header.length; i++) {
+        	byte b = this.header[i];
+        	int ones = 0;
+        	for (int j=0; j < 8; j++) {
+        		ones += (b >> j) & 1;
+        	}
+        	int zeros = 8 - ones;
+        	empty += zeros;
         }
-        return emptyCount;
+        return empty;
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        return isSet(header, i);
+        // some code goes here
+		int headerByte = this.header[i / 8];
+		int offset = i % 8;
+        return ((headerByte >> offset) & 1) == 1;
     }
 
     /**
      * Abstraction to fill or clear a slot on this page.
      */
     private void markSlotUsed(int i, boolean value) {
-        set(header, i, value);
+        // some code goes here
+    	byte headerByte = this.header[i / 8];
+		int offset = i % 8;
+		if (value) {
+			this.header[i / 8] = (byte) (headerByte | (1 << offset));
+		} else {
+			this.header[i / 8] = (byte) (headerByte & ~(1 << offset));
+		}
     }
 
     /**
@@ -355,10 +348,14 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        return IntStream.range(0, tuples.length)
-                .filter(i -> isSlotUsed(i))
-                .mapToObj(i -> tuples[i])
-                .iterator();
+        // some code goes here
+    	List<Tuple> slottedTuples = new ArrayList<Tuple>();
+    	for (int i=0; i < this.numSlots; i++) {
+    		if (isSlotUsed(i)) {
+    			slottedTuples.add(this.tuples[i]);
+    		}
+    	}
+    	return slottedTuples.iterator();
     }
 
 }

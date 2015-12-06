@@ -9,8 +9,9 @@ import java.io.Serializable;
 public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private final PageId pageId;
-    private final int tupleNumber;
+    
+    private final PageId pid;
+    private final int tupleno;
 
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
@@ -22,24 +23,27 @@ public class RecordId implements Serializable {
      *            the tuple number within the page.
      */
     public RecordId(PageId pid, int tupleno) {
-        this.pageId = pid;
-        this.tupleNumber = tupleno;
+        // some code goes here
+    	this.pid = pid;
+    	this.tupleno = tupleno;
     }
 
     /**
      * @return the tuple number this RecordId references.
      */
     public int tupleno() {
-        return this.tupleNumber;
+        // some code goes here
+        return this.tupleno;
     }
 
     /**
      * @return the page id this RecordId references.
      */
     public PageId getPageId() {
-        return this.pageId;
+        // some code goes here
+        return this.pid;
     }
-    
+
     /**
      * Two RecordId objects are considered equal if they represent the same
      * tuple.
@@ -47,24 +51,14 @@ public class RecordId implements Serializable {
      * @return True if this and o represent the same tuple
      */
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        RecordId other = (RecordId) obj;
-        if (pageId == null) {
-            if (other.pageId != null)
-                return false;
-        } else if (!pageId.equals(other.pageId))
-            return false;
-        if (tupleNumber != other.tupleNumber)
-            return false;
-        return true;
+    public boolean equals(Object o) {
+        // some code goes here
+        if (o instanceof RecordId) {
+        	return (((RecordId) o).getPageId().equals(this.pid) && ((RecordId) o).tupleno() == this.tupleno);
+        }
+        return false;
     }
-    
+
     /**
      * You should implement the hashCode() so that two equal RecordId instances
      * (with respect to equals()) have the same hashCode().
@@ -73,11 +67,8 @@ public class RecordId implements Serializable {
      */
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((pageId == null) ? 0 : pageId.hashCode());
-        result = prime * result + tupleNumber;
-        return result;
+        // some code goes here
+    	return (Integer.toString(this.pid.hashCode()) + Integer.toString(this.tupleno)).hashCode();
     }
 
 }

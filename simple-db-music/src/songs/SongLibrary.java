@@ -167,6 +167,7 @@ public class SongLibrary {
             }
             it.close();
             System.out.println("Succesfully clustered db! "+count+" tuples inserted");
+            //Database.getBufferPool().flushAllPages();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -185,7 +186,13 @@ public class SongLibrary {
         try {
             Map<Integer, Double> songIdToScore = extractor.matchPoints(samplePoints, btree, tid);
             long duration = System.currentTimeMillis() - time;
-            System.out.println("Scores: "+convertToSongNames(songIdToScore).toString());
+            Map<String, Double> convertedScores = convertToSongNames(songIdToScore);
+            System.out.println("Scores: ");
+            convertedScores.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(3)
+                .forEach(System.out::println);
+            //System.out.println("Scores: "+convertedScores.);
             Database.getBufferPool().flushAllPages();
             return duration;
         } catch (Exception e) {

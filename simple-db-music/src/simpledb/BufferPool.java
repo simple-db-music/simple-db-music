@@ -1,17 +1,9 @@
 package simpledb;
 
 import java.io.*;
+
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -33,13 +25,13 @@ public class BufferPool {
     /** Default number of pages passed to the constructor. This is used by
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
-    //public static final int DEFAULT_PAGES = 50;
-    public static final int DEFAULT_PAGES = 1000;
+    public static final int DEFAULT_PAGES = 1000;//50;
     
-    private final ConcurrentMap<PageId, Page> cache;
-    private final int maxPages;
+    private ConcurrentHashMap<PageId, Page> pages;
+    private ArrayList<PageId> cachedPageIds = new ArrayList<PageId>();
+    private final int maxNumPages;
     
-    private final LockManager lockManager;
+    private PageLockManager pageLockManager;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -47,11 +39,10 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        System.out.println("num pages: "+numPages);
-        maxPages = numPages;
-        cache = new ConcurrentHashMap<PageId, Page>();
-        
-        lockManager = new LockManager();
+        // some code goes here
+    	this.pages = new ConcurrentHashMap<PageId, Page>(numPages);
+    	this.maxNumPages = numPages;
+    	this.pageLockManager = new PageLockManager();
     }
     
     public static int getPageSize() {
@@ -67,7 +58,7 @@ public class BufferPool {
     public static void resetPageSize() {
     	BufferPool.pageSize = PAGE_SIZE;
     }
-    
+
     /**
      * Retrieve the specified page with the associated permissions.
      * Will acquire a lock and may block if that lock is held by another
@@ -85,25 +76,39 @@ public class BufferPool {
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-
+        // some code goes here
         /*
-        // keep trying to acquire lock, only advance once succeed
-        while (!lockManager.acquireLock(tid, pid, perm)) {
-        }
-        */
-        
-        // must synchronize on cache because eviction is possible between
-        // these two lines (can evict clean pages, so even if 
-        // hold the lock can't be sure another thread won't interfere
-        synchronized (cache) {
-            if (cache.containsKey(pid)) {
-                return cache.get(pid);
-            }
-        }
-        
-        Page page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
-        addPageToCache(page);
-        return page;
+    	long start = System.currentTimeMillis();
+    	long end = start + 300; // 300 ms blocking time
+    	while (!pageLockManager.canAcquireLock(pid, tid, perm)) {
+    		// block until we can acquire a lock
+    		if (System.currentTimeMillis() > end) {
+    			throw new TransactionAbortedException();
+    		}
+    	}
+    	*/
+    	//if (pageLockManager.acquireLock(pid, tid, perm)) {
+    		// we have the lock on this page now
+    		if (this.pages.containsKey(pid)) {
+        		return this.pages.get(pid);
+        	}
+        	DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+    		Page page = file.readPage(pid);
+    		// if cache is full, evict a page
+            //synchronized (cachedPageIds) {
+        	if (this.pages.size() >= this.maxNumPages) {
+        		this.evictPage();
+        	}
+        	this.pages.put(pid, page);
+        	if (!cachedPageIds.contains(pid)) {
+        		this.cachedPageIds.add(pid);
+        	}
+        	//}
+    		return page;
+    	/*} else {
+    		// couldn't get lock, so we try again
+    		return getPage(tid, pid, perm);
+    	}*/
     }
 
     /**
@@ -115,8 +120,10 @@ public class BufferPool {
      * @param tid the ID of the transaction requesting the unlock
      * @param pid the ID of the page to unlock
      */
-    public void releasePage(TransactionId tid, PageId pid) {
-        lockManager.releaseLock(tid,  pid);
+    public  void releasePage(TransactionId tid, PageId pid) {
+        // some code goes here
+        // not necessary for lab1|lab2
+    	pageLockManager.releaseLock(pid, tid);
     }
 
     /**
@@ -125,9 +132,18 @@ public class BufferPool {
      * @param tid the ID of the transaction requesting the unlock
      */
     public void transactionComplete(TransactionId tid) throws IOException {
-        transactionComplete(tid, true);
+        // some code goes here
+        // not necessary for lab1|lab2
+    	transactionComplete(tid, true);
     }
-    
+
+    /** Return true if the specified transaction has a lock on the specified page */
+    public boolean holdsLock(TransactionId tid, PageId p) {
+        // some code goes here
+        // not necessary for lab1|lab2
+        return pageLockManager.holdsLock(p, tid);
+    }
+
     /**
      * Commit or abort a given transaction; release all locks associated to
      * the transaction.
@@ -137,36 +153,21 @@ public class BufferPool {
      */
     public void transactionComplete(TransactionId tid, boolean commit)
         throws IOException {
-        
-        Set<PageId> dirtiedByTransaction = new HashSet<PageId>();
-        
-        // don't need to synchronize on cache - if this transaction dirtied a page,
-        // must have lock on it so no cannot be evicted from the cache
-        for (Entry<PageId, Page> e : cache.entrySet()) {
-            Page p = e.getValue();
-            if (tid.equals(p.isPageDirty())) {
-                dirtiedByTransaction.add(e.getKey());
-            }
-        }
-        
-        if (commit) {
-            flushPages(tid);
-        }
-        
-        // Can remove all pages dirtied by the transaction (if committing, already flushed
-        // to disk)
-        for(PageId pid : dirtiedByTransaction) {
-            cache.remove(pid);
-        }
-
-        /*
-        // release all acquired locks
-        for (PageId pid : lockManager.getLockedPages()) {
-            if (lockManager.holdsLock(tid, pid)) {
-                releasePage(tid, pid);
-            }
-        }
-        */        
+        // some code goes here
+        // not necessary for lab1|lab2
+    	if (commit) {
+    		flushPages(tid);
+    	} else {
+    		for (PageId pid : this.cachedPageIds) {
+        		Page cachedPage = this.pages.get(pid);
+        		if (cachedPage.isPageDirty() != null && cachedPage.isPageDirty().equals(tid)) {
+        			// restore page to on-disk state
+        			this.pages.put(pid, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+        		}
+        	}
+    	}
+    	// release locks this transaction held
+    	//pageLockManager.releaseHeldLocks(tid);
     }
 
     /**
@@ -186,11 +187,11 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        ArrayList<Page> touchedPages = 
-                Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
-        for (Page p : touchedPages) {
-            p.markPageDirty(true, tid);
-            addPageToCache(p);
+        // some code goes here
+        ArrayList<Page> dirtiedPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+        for (Page p : dirtiedPages) {
+        	p.markPageDirty(true, tid);
+        	this.pages.put(p.getId(), p);
         }
     }
 
@@ -209,12 +210,11 @@ public class BufferPool {
      */
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        int tableId = t.getRecordId().getPageId().getTableId();
-        ArrayList<Page> touchedPages = 
-                Database.getCatalog().getDatabaseFile(tableId).deleteTuple(tid, t);
-        for (Page p : touchedPages) {
-            p.markPageDirty(true, tid);
-            addPageToCache(p);
+        // some code goes here
+    	ArrayList<Page> dirtiedPages = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
+    	for (Page p : dirtiedPages) {
+        	p.markPageDirty(true, tid);
+        	this.pages.put(p.getId(), p);
         }
     }
 
@@ -224,14 +224,11 @@ public class BufferPool {
      *     break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        synchronized (cache) {
-            for (PageId pageid : cache.keySet()) {
-                Page page = cache.get(pageid);
-                //if (page.isPageDirty() != null) {
-                    flushPage(pageid);
-                //}
-            }
-        }
+        // some code goes here
+    	for (PageId pid : this.pages.keySet()) {
+    		this.flushPage(pid);
+    	}
+
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -243,7 +240,11 @@ public class BufferPool {
         are removed from the cache so they can be reused safely
     */
     public synchronized void discardPage(PageId pid) {
-        cache.remove(pid);
+        // some code goes here
+        this.pages.remove(pid);
+        //synchronized (cachedPageIds) {
+        this.cachedPageIds.remove(pid);
+        //}
     }
 
     /**
@@ -251,76 +252,53 @@ public class BufferPool {
      * @param pid an ID indicating the page to flush
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
-        int tableid = pid.getTableId();
-        DbFile dbfile = Database.getCatalog().getDatabaseFile(tableid);
-        Page page = cache.get(pid);
-        dbfile.writePage(page);
-        page.markPageDirty(false, null);
+        // some code goes here
+    	Page p = this.pages.get(pid);
+    	if (p.isPageDirty() != null) {
+    		Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(p);
+        	p.markPageDirty(false, null);
+    	}
     }
 
     /** Write all pages of the specified transaction to disk.
      */
     public synchronized  void flushPages(TransactionId tid) throws IOException {
-        synchronized (cache) {
-            for (Entry<PageId, Page> e : cache.entrySet()) {
-                Page p = e.getValue();
-                if (tid.equals(p.isPageDirty())) {
-                    flushPage(e.getKey());
-                }
-            }
-        }
+        // some code goes here
+        // not necessary for lab1|lab2
+        //synchronized (cachedPageIds) {
+    	for (PageId pid : this.cachedPageIds) {
+    		Page cachedPage = this.pages.get(pid);
+    		if (cachedPage.isPageDirty() != null && cachedPage.isPageDirty().equals(tid)) {
+    			flushPage(pid);
+    		}
+    	}
+        //}
     }
 
     /**
      * Discards a page from the buffer pool.
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
-    private synchronized void evictPage() throws DbException {
-  
-        // Get random *clean* page to evict
-        PageId pageIdToRemove;
-        synchronized(cache) {
-            if (cache.isEmpty()) {
-                throw new DbException("Error - calling evictPage on empty cache");
-            }
-            
-            Iterator<PageId> iterator = cache.keySet().iterator();
-            boolean shouldRemove;
-            do {
-                if (!iterator.hasNext()) {
-                    //throw new DbException("Error - need to evict page but all pages in buffer pool are dirty");
-                    pageIdToRemove = cache.keySet().iterator().next();
-                    break;
-                }
-                pageIdToRemove = iterator.next();
-                shouldRemove = (cache.get(pageIdToRemove) instanceof BTreeLeafPage);
-            //} while (cache.get(pageIdToRemove).isPageDirty() != null);
-            } while (!shouldRemove);
-            
-            try {
-                flushPage(pageIdToRemove);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            cache.remove(pageIdToRemove);
-        }
-    }
-    
-    /**
-     * Adds the given page to the cache, evicting pages if necessary.
-     * @param p the Page to be added to the cache
-     */
-    private void addPageToCache(Page p) throws DbException {
-        synchronized (cache) {
-            if (cache.containsValue(p)) {
-                return;
-            }
-
-            while (cache.size() >= maxPages) {
-                evictPage();
-            }
-            cache.put(p.getId(), p);
-        }
+    private void evictPage() throws DbException {
+        // some code goes here
+        //synchronized (cachedPageIds) {
+    	for (PageId pid : this.cachedPageIds) {
+    		Page cachedPage = this.pages.get(pid);
+    		boolean isLeaf = (cachedPage instanceof BTreeLeafPage);
+    		// evict earliest leaf page
+    		if (isLeaf) {
+    			try {
+					this.flushPage(pid);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				this.cachedPageIds.remove(pid);
+    			this.pages.remove(pid);
+    			return;
+    		}
+    	}
+    	throw new DbException("All pages are dirty, cannot evict any.");
+        //}
     }
 
 }

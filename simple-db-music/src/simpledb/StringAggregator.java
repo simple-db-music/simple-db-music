@@ -1,9 +1,10 @@
 package simpledb;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import simpledb.Aggregator.Op;
 
 /**
  * Knows how to compute some aggregate over a set of StringFields.
@@ -12,16 +13,12 @@ public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
     
-    private final Map<Field, Integer> groupingToGroupSize;
-    
-    int size;
-    
-    private final int groupByFieldIndex;
-    private final int aggregateFieldIndex;
-    private final Type groupByFieldType;
-    
-    private TupleDesc childTupleDesc;
-    private TupleDesc tupleDesc;
+    private int gbfield;
+    private Type gbfieldType;
+    private int afield;
+    private Op what;
+    private boolean noGrouping = false;
+    private HashMap<Field, ArrayList<Field>> buckets = new HashMap<Field, ArrayList<Field>>();
 
     /**
      * Aggregate constructor
@@ -33,20 +30,18 @@ public class StringAggregator implements Aggregator {
      */
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // Used if the aggregator has a grouping
-        this.groupingToGroupSize = new HashMap<Field, Integer>();
-        this.groupByFieldIndex = gbfield;
-        this.groupByFieldType = gbfieldtype;
-        this.aggregateFieldIndex = afield;
-        
-        if (what != Op.COUNT) {
-            throw new IllegalArgumentException("Error - StringAggregator only supports COUNT op");
-        }
-        
-        // Used if the aggregator has no grouping
-        this.size = 0;
-        
-        this.tupleDesc = null;
+        // some code goes here
+    	this.gbfield = gbfield;
+    	if (gbfield == NO_GROUPING) {
+    		this.noGrouping = true;
+    	}
+    	this.gbfieldType = gbfieldtype;
+    	this.afield = afield;
+    	if (what != Op.COUNT) {
+    		throw new IllegalArgumentException();
+    	} else {
+    		this.what = what;
+    	}
     }
 
     /**
@@ -54,18 +49,21 @@ public class StringAggregator implements Aggregator {
      * @param tup the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        if (groupByFieldIndex == NO_GROUPING) {
-            size++;
-        } else {
-            Field groupVal = tup.getField(groupByFieldIndex);
-            int oldAggVal;
-            if (!groupingToGroupSize.containsKey(groupVal)) {
-                oldAggVal = 0;
-            } else {
-                oldAggVal = groupingToGroupSize.get(groupVal);
-            }
-            groupingToGroupSize.put(groupVal, oldAggVal + 1);
-        }
+        // some code goes here
+    	Field groupBy;
+    	if (this.noGrouping) {
+    		groupBy = new StringField("NO_GROUPING", 11);
+    	} else {
+    		groupBy = tup.getField(this.gbfield);
+    	}
+    	Field aggregate = tup.getField(this.afield);
+    	if (buckets.containsKey(groupBy)) {
+    		buckets.get(groupBy).add(aggregate);
+    	} else {
+    		ArrayList<Field> newAgg = new ArrayList<Field>();
+    		newAgg.add(aggregate);
+    		buckets.put(groupBy, newAgg);
+    	}
     }
 
     /**
@@ -77,53 +75,36 @@ public class StringAggregator implements Aggregator {
      *   aggregate specified in the constructor.
      */
     public DbIterator iterator() {
-        TupleDesc td;
-        List<Tuple> tuples = new ArrayList<Tuple>();
-        if (groupByFieldIndex == NO_GROUPING) {
-            td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{"aggregateVal"});
-            Tuple t = new Tuple(td);
-            t.setField(0, new IntField(size));
-            tuples.add(t);
-        } else {
-            td = new TupleDesc(new Type[]{groupByFieldType, Type.INT_TYPE}, 
-                    new String[]{"groupVal", "aggregateVal"});
-            for (Field groupVal : groupingToGroupSize.keySet()) {
-                int count = groupingToGroupSize.get(groupVal);
-                Tuple t = new Tuple(td);
-                t.setField(0, groupVal);
-                t.setField(1, new IntField(count));
-                tuples.add(t);
-            }
+        // some code goes here
+    	ArrayList<Tuple> tuples = new ArrayList<Tuple>();
+    	Type[] types;
+    	String[] fields;
+    	if (this.noGrouping) {
+    		types = new Type[] {Type.INT_TYPE};
+        	fields = new String[] {this.what.toString()};
+    	} else {
+    		types = new Type[] {this.gbfieldType, Type.INT_TYPE};
+        	fields = new String[] {"group", this.what.toString()};
+    	}
+    	TupleDesc newTD = new TupleDesc(types, fields);
+        for (Field group : buckets.keySet()) {
+        	int aggregateVal = 0;
+        	ArrayList<Field> bucket = buckets.get(group);
+        	if (this.what == Op.COUNT) {
+        		aggregateVal = bucket.size();
+        	}
+        	Tuple newTuple = new Tuple(newTD);
+        	if (this.noGrouping) {
+        		newTuple.setField(0, new IntField(aggregateVal));
+        	} else {
+        		newTuple.setField(0, group);
+            	newTuple.setField(1, new IntField(aggregateVal));
+        	}
+        	tuples.add(newTuple);
         }
-        return new TupleIterator(td, tuples);
+        TupleIterator iter = new TupleIterator(newTD, tuples);
+        iter.open();
+        return iter;
     }
 
-    @Override
-    public TupleDesc getTupleDesc() {
-        if (tupleDesc == null) {
-            String aggColName = Op.COUNT.toString();
-            if (groupByFieldIndex == NO_GROUPING) {
-                if (childTupleDesc != null) {
-                    aggColName += " ("+childTupleDesc.getFieldName(aggregateFieldIndex)+")";
-                }
-                tupleDesc = new TupleDesc(new Type[]{Type.INT_TYPE}, 
-                        new String[]{aggColName});        
-            } else {
-                String groupColName = "group";
-                if (childTupleDesc != null) {
-                    aggColName += " ("+childTupleDesc.getFieldName(aggregateFieldIndex)+")";
-                    groupColName = childTupleDesc.getFieldName(groupByFieldIndex);
-                }
-                tupleDesc = new TupleDesc(new Type[]{groupByFieldType, Type.INT_TYPE}, 
-                        new String[]{groupColName, aggColName});
-            }
-        }
-        return tupleDesc;
-    }
-
-    @Override
-    public void setChildTupleDesc(TupleDesc td) {
-        childTupleDesc = td;
-        tupleDesc = null;
-    }
 }
