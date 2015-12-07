@@ -39,8 +39,8 @@ public class AnchorExtractor extends Extractor {
         int maxSong2 = -1;
         int count = 0;
         //int totalMatching = 0;
-       for (DataPoint dp : randomSample(sampleList)) {
-        //for (DataPoint dp : sampleList) {
+      // for (DataPoint dp : randomSample(sampleList)) {
+        for (DataPoint dp : sampleList) {
         //randomSample(sampleList).parallelStream().forEach(dp -> {
             int curHash = dp.getHash();
             if (++count % 500 == 0) {
@@ -50,7 +50,7 @@ public class AnchorExtractor extends Extractor {
             try {
                 knownPoints = getPointsMatchingHash(curHash, btree, tid);
               //totalMatching += knownPoints.size();
-                System.out.println("num points matched to: "+knownPoints.size());
+                //System.out.println("num points matched to: "+knownPoints.size());
                 for (DataPoint knownPoint : knownPoints) {
                     /*
                     int trackId = knownPoint.getTrackId();
@@ -70,6 +70,7 @@ public class AnchorExtractor extends Extractor {
                     }
                     curVotes += 1;
                     songVotes.put(curDiff, curVotes);
+                    /*
                     if (curVotes > maxVotes) {
                         if (maxSong != knownPoint.getTrackId()) {
                             maxSong2 = maxSong;
@@ -83,6 +84,7 @@ public class AnchorExtractor extends Extractor {
                             return early;
                         }
                     }
+                    */
                 }
             } catch (Exception e) {
                 // TODO Auto-generated catch block
