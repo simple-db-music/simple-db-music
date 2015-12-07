@@ -18,9 +18,14 @@ public class RangeExtractor extends Extractor {
     
     private static final int[] FREQ_RANGES = new int[] {12, 24, 36, 48, 60, 72, 100};
     
-    private static final int EARLY_LEAD_THRESHOLD = 20;
-    private static final int EARLY_COMPETITOR_THRESHOLD = 5;
-
+    private final int earlyReturnThreshold;
+    private final int competitorRatio;
+    
+    public RangeExtractor(int earlyReturnThreshold, int competitorRatio) {
+        this.earlyReturnThreshold = earlyReturnThreshold;
+        this.competitorRatio = competitorRatio;
+    }
+    
     @Override
     public Set<DataPoint> extractDataPoints(double[][] spectrogram, int trackId) {
         Set<DataPoint> dataPoints = new HashSet<DataPoint>();
@@ -53,11 +58,6 @@ public class RangeExtractor extends Extractor {
             if (knownMatches.size() == 0) {
                 continue;
             }
-            
-//            if (knownMatches.size() > 1) {
-//                System.out.println("collision size: "+knownMatches.size());
-//            }
-
             // choose random data point from the set
             DataPoint dp = knownMatches.iterator().next();
             int songId = dp.getTrackId();
@@ -82,7 +82,7 @@ public class RangeExtractor extends Extractor {
                 }
                 maxVotes = curNumMatches;
                 maxSongVotes = songId;
-                if (maxVotes > EARLY_LEAD_THRESHOLD && secondMostVotes <= EARLY_COMPETITOR_THRESHOLD) {
+                if (maxVotes > earlyReturnThreshold && secondMostVotes <= maxVotes/competitorRatio) {
                     Map<Integer, Double> early = new HashMap<>();
                     // -1 is the signal that not all votes were tabulated
                     early.put(songId, -1.0);

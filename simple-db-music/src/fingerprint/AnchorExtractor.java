@@ -33,10 +33,14 @@ public class AnchorExtractor extends Extractor {
 
     private final boolean useParallelMatching;
     private final int numThreads;
-
-    public AnchorExtractor(boolean useParallelMatching, int numThreads) {
+    private final int earlyReturnThreshold;
+    private final int competitorRatio;
+    
+    public AnchorExtractor(int earlyReturnThreshold, int competitorRatio, boolean useParallelMatching, int numThreads) {
         this.useParallelMatching = useParallelMatching;
         this.numThreads = numThreads;
+        this.earlyReturnThreshold = earlyReturnThreshold;
+        this.competitorRatio = competitorRatio;
     }
 
     @Override
@@ -91,7 +95,7 @@ public class AnchorExtractor extends Extractor {
                                     maxVotes.set(curVotes);
                                     maxSong.set(knownPoint.getTrackId());
                                     //System.out.println("maxVotes: "+curVotes);
-                                    if (maxVotes.get() > 20 && maxVotes2.get() <= maxVotes.get()/2) {
+                                    if (maxVotes.get() > earlyReturnThreshold && maxVotes2.get() <= maxVotes.get()/competitorRatio) {
                                         //System.out.println("trying to end early!");
                                         early.put(knownPoint.getTrackId(), -1.0);
                                         return;
@@ -143,7 +147,7 @@ public class AnchorExtractor extends Extractor {
                             }
                             maxVotes = curVotes;
                             maxSong = knownPoint.getTrackId();
-                            if (maxVotes > 20 && maxVotes2 <= maxVotes/2) {
+                            if (maxVotes > earlyReturnThreshold && maxVotes2 <= maxVotes/competitorRatio) {
                                 Map<Integer, Double> early = new HashMap<>();
                                 early.put(knownPoint.getTrackId(), -1.0);
                                 return early;

@@ -20,11 +20,21 @@ public class Main {
     private static final boolean USE_RANGE_EXTRACTION = true;
     private static final boolean USE_PARALLEL_ANCHOR = false;
     // 2, 3, 5, 10 work best on my (slow) computer
-    private static final int NUM_THREADS = 3;
+    private static final int NUM_THREADS = 2;
 
     public static void main(String[] args) throws Exception {//IOException, NoSuchElementException, DbException, TransactionAbortedException {        
         // MRU good for range extraction and parallel anchor extraction
         Database.getBufferPool().setMRU(USE_RANGE_EXTRACTION || !USE_RANGE_EXTRACTION && USE_PARALLEL_ANCHOR);
+        
+        int earlyReturnThreshold;
+        int competitorRatio;
+        if (USE_RANGE_EXTRACTION) {
+            earlyReturnThreshold = 20;
+            competitorRatio = 4;
+        } else {
+            earlyReturnThreshold = 6;
+            competitorRatio = 2;
+        }
         
         // creates a new thread that waits for a specified
         // of time before stopping
@@ -46,9 +56,9 @@ public class Main {
         
         Extractor extractor;
         if (USE_RANGE_EXTRACTION) {
-            extractor = new RangeExtractor();
+            extractor = new RangeExtractor(earlyReturnThreshold, competitorRatio);
         } else {
-            extractor = new AnchorExtractor(USE_PARALLEL_ANCHOR, NUM_THREADS);
+            extractor = new AnchorExtractor(earlyReturnThreshold, competitorRatio, USE_PARALLEL_ANCHOR, NUM_THREADS);
         }
         
         SongLibrary songLibrary = new SongLibrary(KNOWN_SONG_FOLDER, extractor);
