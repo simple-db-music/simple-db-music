@@ -33,6 +33,8 @@ public class BufferPool {
     private final int maxNumPages;
     
     private PageLockManager pageLockManager;
+    
+    private boolean useMRU;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -44,6 +46,10 @@ public class BufferPool {
     	this.pages = new HashMap<PageId, Page>(numPages);
     	this.maxNumPages = numPages;
     	this.pageLockManager = new PageLockManager();
+    }
+    
+    public void setMRU(boolean on) {
+        useMRU = on;
     }
     
     public static int getPageSize() {
@@ -98,13 +104,19 @@ public class BufferPool {
     		// if cache is full, evict a page
             //synchronized (cachedPageIds) {
         	if (this.pages.size() >= this.maxNumPages) {
-        		this.evictRandomPage();
+        	    if (useMRU) {
+        	        this.evictMRUPage();
+        	    } else {
+        	        this.evictRandomPage();
+        	    }
         	}
         	this.pages.put(pid, page);
         	if (!cachedPageIds.contains(pid)) {
         		this.cachedPageIds.add(pid);
         	}
-        	updateMRU(pid);
+        	if (useMRU) {
+        	    updateMRU(pid);
+        	}
         	//}
     		return page;
     	/*} else {
@@ -114,9 +126,11 @@ public class BufferPool {
     }
     
     private void updateMRU(PageId pid) {
+        //synchronzied(cachedPageIds) {
     	if (cachedPageIds.contains(pid)) cachedPageIds.remove(pid);
     	
     	cachedPageIds.add(pid);
+        //}
     }
 
     /**
@@ -171,7 +185,9 @@ public class BufferPool {
         		if (cachedPage.isPageDirty() != null && cachedPage.isPageDirty().equals(tid)) {
         			// restore page to on-disk state
         			this.pages.put(pid, Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
-        			updateMRU(pid);
+        			if (useMRU) {
+        			    updateMRU(pid);
+        			}
         		}
         	}
     	}
@@ -201,7 +217,9 @@ public class BufferPool {
         for (Page p : dirtiedPages) {
         	p.markPageDirty(true, tid);
         	this.pages.put(p.getId(), p);
+        	if (useMRU) {
         	updateMRU(p.getId());
+        	}
         }
     }
 
@@ -225,7 +243,9 @@ public class BufferPool {
     	for (Page p : dirtiedPages) {
         	p.markPageDirty(true, tid);
         	this.pages.put(p.getId(), p);
-        	updateMRU(p.getId());
+        	if (useMRU) {
+        	    updateMRU(p.getId());
+        	}
         }
     }
 
@@ -336,7 +356,6 @@ public class BufferPool {
     private void evictRandomPage() throws DbException {
         //synchronized (cachedPageIds) {
     	for (PageId pid : pages.keySet()) {
-    		System.out.println(cachedPageIds.indexOf(pid));
     		Page cachedPage = pages.get(pid);
     		boolean isLeaf = (cachedPage instanceof BTreeLeafPage);
     		if (isLeaf) {

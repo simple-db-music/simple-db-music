@@ -10,10 +10,8 @@ import java.util.Set;
 import com.musicg.wave.Wave;
 
 import audio.ReadAudio;
-import fingerprint.AnchorExtractor;
 import fingerprint.DataPoint;
 import fingerprint.Extractor;
-import fingerprint.RangeExtractor;
 import simpledb.BTreeFile;
 import simpledb.BTreeUtility;
 import simpledb.Database;
@@ -32,7 +30,7 @@ import simpledb.Utility;
 
 
 public class SongLibrary {
-    private final File dbFile;
+    private final File dbFile = new File("song_db");
     private final File songNameFile = new File("songs");
 
     private final Extractor extractor;
@@ -42,17 +40,8 @@ public class SongLibrary {
     private final TupleDesc songNameTableTd;
     private final TransactionId tid;
     
-    public SongLibrary(File songFolder, boolean useRangeExtraction, boolean useClustered) throws IOException {
-        if (useRangeExtraction) {
-            extractor = new RangeExtractor();
-        } else {
-            extractor = new AnchorExtractor();
-        }
-        if (useClustered) {
-            dbFile = new File("clustered_song_db");
-        } else {
-            dbFile = new File("song_db");
-        }
+    public SongLibrary(File songFolder, Extractor extractor) throws IOException {
+        this.extractor = extractor;
         btreeTd = new TupleDesc(new Type[] {Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE},
                 new String[] {"Hash", "Time Offset", "Track ID"});
         songNameTableTd = new TupleDesc(new Type[]{Type.STRING_TYPE, Type.INT_TYPE},
@@ -60,8 +49,8 @@ public class SongLibrary {
         tid = new TransactionId();
         boolean needToInitDb = !dbFile.exists();
         if (needToInitDb) {
-            btree = BTreeUtility.createEmptyBTreeFile("song_db", 3, 0);
-            songNameTable = Utility.createEmptyHeapFile("songs", 2, songNameTableTd);
+            btree = BTreeUtility.createEmptyBTreeFile(dbFile.getName(), 3, 0);
+            songNameTable = Utility.createEmptyHeapFile(songNameFile.getName(), 2, songNameTableTd);
             Database.getCatalog().addTable(btree);
             Database.getCatalog().addTable(songNameTable);
             createDatabase(songFolder);
@@ -144,33 +133,8 @@ public class SongLibrary {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // Uncomment this to create a clustered version of the database in a separate file
-        // clusterDb();
     }
     
-    private void clusterDb() {
-        try {
-            System.out.println("clustering db...");
-            BTreeFile clusteredDb = BTreeUtility.createEmptyBTreeFile("clustered_song_db", 3, 0);
-            Database.getCatalog().addTable(clusteredDb);
-            DbFileIterator it = btree.iterator(tid);
-            it.open();
-            int count = 0;
-            while (it.hasNext()) {
-                count++;
-                Database.getBufferPool().insertTuple(tid, clusteredDb.getId(), it.next());
-                if (count % 100000 == 0) {
-                    System.out.println(count+" tuples inserted");
-                }
-            }
-            it.close();
-            System.out.println("Succesfully clustered db! "+count+" tuples inserted");
-            Database.getBufferPool().flushAllPages();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public long matchSong(File file) throws NoSuchElementException, DbException, TransactionAbortedException, IOException {
         long time = System.currentTimeMillis();
         Wave wave = new Wave(file.getAbsolutePath());
